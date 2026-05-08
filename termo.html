@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Termo de Ciência — FACILITA CELL</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#f0f0f0;font-family:Arial,sans-serif;font-size:12px;color:#111;line-height:1.6}
+.btn-area{display:flex;gap:10px;justify-content:center;padding:16px;background:#fff;border-bottom:1px solid #ddd}
+.btn{padding:10px 24px;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer}
+.btn-print{background:#111;color:#fff}.btn-whats{background:#25D366;color:#fff}
+.loading{text-align:center;padding:60px;font-size:16px;color:#666}
+.erro{text-align:center;padding:40px;color:#e74c3c;font-size:14px}
+.doc{max-width:800px;margin:20px auto;background:#fff;padding:40px;box-shadow:0 2px 10px rgba(0,0,0,.1)}
+.header{text-align:center;border-bottom:2px solid #111;padding-bottom:14px;margin-bottom:18px}
+.header h1{font-size:18px;letter-spacing:2px;font-weight:900;margin-bottom:4px}
+.header h2{font-size:13px;font-weight:700;margin-bottom:4px}
+.header p{font-size:11px;color:#444}
+.dados{background:#f8f8f8;border:1px solid #ddd;border-radius:4px;padding:14px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.dados .item strong{display:block;font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px}
+.secao h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:#111;color:#fff;padding:6px 10px;margin-bottom:10px;margin-top:14px}
+.secao ol{padding-left:18px;margin-bottom:10px}
+.secao li{margin-bottom:8px;line-height:1.6;font-size:12px}
+.alerta{background:#fff0f0;border:1px solid #e74c3c;border-radius:4px;padding:10px;margin:14px 0;font-size:11px;color:#c0392b;text-align:center;font-weight:700}
+.declaracao{background:#fff8dc;border:1px solid #e0c030;border-radius:4px;padding:14px;margin:16px 0;font-size:12px;line-height:1.6}
+.assinaturas{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:30px}
+.assin .linha{border-top:1px solid #333;padding-top:8px;margin-top:40px;text-align:center}
+.assin .nome{font-weight:700;font-size:12px}
+.assin .cargo{color:#666;font-size:10px}
+.rodape{text-align:center;margin-top:18px;font-size:10px;color:#888;border-top:1px solid #eee;padding-top:10px}
+@media print{
+  body{background:#fff}.btn-area{display:none}
+  .doc{box-shadow:none;padding:20px;margin:0;max-width:100%}
+}
+</style>
+</head>
+<body>
+
+<div class="btn-area" id="btnArea" style="display:none">
+  <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+  <button class="btn btn-whats" onclick="enviarWhats()">📲 Enviar WhatsApp</button>
+</div>
+
+<div class="loading" id="loading">⏳ Carregando termo...</div>
+<div class="erro" id="erro" style="display:none"></div>
+
+<div class="doc" id="doc" style="display:none">
+  <div class="header">
+    <h1>FACILITA CELL</h1>
+    <h2>TERMO DE CIÊNCIA E RESPONSABILIDADE DO CLIENTE</h2>
+    <p>Av. Morenitas, N78, Jardim das Flores, Porto Meira, Foz do Iguaçu/PR</p>
+    <p>FACILITACELL2026@GMAIL.COM | (45) 99118-7639 | CNPJ: 150.300.300/0001-18</p>
+  </div>
+
+  <div class="dados">
+    <div class="item"><strong>Contrato Nº</strong><span id="d-contrato">—</span></div>
+    <div class="item"><strong>Data</strong><span id="d-data">—</span></div>
+    <div class="item"><strong>Cliente</strong><span id="d-cliente">—</span></div>
+    <div class="item"><strong>CPF</strong><span id="d-cpf">—</span></div>
+    <div class="item"><strong>Telefone</strong><span id="d-tel">—</span></div>
+    <div class="item"><strong>Endereço</strong><span id="d-end">—</span></div>
+    <div class="item"><strong>Aparelho</strong><span id="d-aparelho">—</span></div>
+    <div class="item"><strong>IMEI</strong><span id="d-imei">—</span></div>
+    <div class="item"><strong>Parcelas</strong><span id="d-parcelas">—</span></div>
+    <div class="item"><strong>Valor Total</strong><span id="d-total">—</span></div>
+    <div class="item"><strong>1º Vencimento</strong><span id="d-venc1">—</span></div>
+    <div class="item"><strong>Dia de vencimento</strong>Todo dia <span id="d-dia">—</span></div>
+  </div>
+
+  <div class="alerta">⚠️ LEIA COM ATENÇÃO ANTES DE ASSINAR — O DESCUMPRIMENTO RESULTA NO BLOQUEIO DO APARELHO</div>
+
+  <div class="secao">
+    <h3>Condições Obrigatórias</h3>
+    <ol>
+      <li><strong>BLOQUEIO POR INADIMPLÊNCIA:</strong> O aparelho será bloqueado remotamente após <strong>30 dias</strong> de atraso, impossibilitando o uso até a regularização do débito.</li>
+      <li><strong>AVISOS:</strong> Você receberá aviso por WhatsApp no 1º dia de atraso e ligação no 15º dia. O bloqueio ocorre no 30º dia.</li>
+      <li><strong>PROIBIÇÃO DE VENDA/DOAÇÃO:</strong> O aparelho <strong>NÃO PODE</strong> ser vendido, doado, cedido ou transferido enquanto houver parcelas em aberto. Caracteriza <strong>crime de estelionato (Art. 171 CP)</strong> com pena de 1 a 5 anos de reclusão.</li>
+      <li><strong>NÃO ACEITAMOS DEVOLUÇÃO:</strong> A devolução do aparelho não quita o contrato. As parcelas continuam devidas independentemente da posse do bem.</li>
+      <li><strong>RESPONSABILIDADE INTEGRAL:</strong> Em caso de roubo, furto, quebra ou perda, as parcelas continuam sendo devidas normalmente.</li>
+      <li><strong>COMUNICAÇÃO OBRIGATÓRIA:</strong> Em caso de roubo ou furto, comunicar à FACILITA CELL em até 48h pelo WhatsApp (45) 99118-7639, com boletim de ocorrência.</li>
+      <li><strong>MULTA E JUROS:</strong> Sobre parcelas em atraso: multa de <strong>2%</strong> + juros de <strong>1% ao mês</strong> (Código Civil, Art. 406).</li>
+      <li><strong>LGPD:</strong> Seus dados são usados exclusivamente para gestão deste financiamento (Lei 13.709/2018).</li>
+      <li><strong>SISTEMA DE BLOQUEIO MDM:</strong> O aparelho possui tecnologia de rastreamento e bloqueio remoto via IMEI ativada neste ato.</li>
+      <li><strong>QUITAÇÃO ANTECIPADA:</strong> Permitida com desconto proporcional dos juros futuros (Art. 52 §2º CDC).</li>
+      <li><strong>PROIBIÇÃO DE MODIFICAÇÕES:</strong> É vedado realizar root, jailbreak ou qualquer modificação que comprometa o sistema de bloqueio do aparelho.</li>
+      <li><strong>RECONHECIMENTO DE DÍVIDA:</strong> Este Termo constitui título executivo extrajudicial (Art. 784 CPC).</li>
+    </ol>
+  </div>
+
+  <div class="declaracao">
+    <strong>DECLARAÇÃO DO CLIENTE:</strong> Declaro que recebi o aparelho em perfeito estado, que li e entendi todas as condições acima, e que estou ciente das consequências do descumprimento, incluindo o bloqueio do aparelho e medidas legais cabíveis. Declaro ainda que as informações fornecidas são verdadeiras.
+  </div>
+
+  <div class="assinaturas">
+    <div class="assin">
+      <div class="linha">
+        <div class="nome" id="ass-nome">—</div>
+        <div class="cargo">Assinatura do Cliente</div>
+        <div class="cargo">CPF: <span id="ass-cpf">—</span></div>
+      </div>
+    </div>
+    <div class="assin">
+      <div class="linha">
+        <div class="nome">FACILITA CELL</div>
+        <div class="cargo">Credora / Financiadora</div>
+        <div class="cargo">CNPJ: 150.300.300/0001-18</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rodape">
+    <p>FACILITA CELL — Av. Morenitas, N78, Jardim das Flores, Porto Meira, Foz do Iguaçu/PR</p>
+    <p>FACILITACELL2026@GMAIL.COM | (45) 99118-7639</p>
+    <p>Documento gerado em <span id="rodape-data">—</span> — Válido conforme Lei 13.874/2019</p>
+  </div>
+</div>
+
+<script>
+var SUPABASE_URL = 'https://lgtnarralybqkevsrczn.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxndG5hcnJhbHlicWtldnNyY3puIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NDY5NTIsImV4cCI6MjA5MjEyMjk1Mn0.7wClczE45DQIXObEQDXvljhZIBLXuS8a0tUmTe9xtZQ';
+var WHATSAPP = '5545991187639';
+
+var sb = null;
+try { sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) {}
+
+function set(id, val) { var e = document.getElementById(id); if (e) e.textContent = val || '—'; }
+function fmt(v) { return v ? 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2}) : '—'; }
+function fmtDate(d) { return d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '—'; }
+
+var hoje = new Date();
+set('d-data', hoje.toLocaleDateString('pt-BR'));
+set('rodape-data', hoje.toLocaleDateString('pt-BR'));
+
+async function carregar() {
+  var params = new URLSearchParams(window.location.search);
+  var id = params.get('contrato');
+
+  if (!id) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('erro').style.display = 'block';
+    document.getElementById('erro').textContent = '❌ Nenhum contrato especificado na URL.';
+    return;
+  }
+
+  if (!sb) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('erro').style.display = 'block';
+    document.getElementById('erro').textContent = '❌ Banco de dados não conectado.';
+    return;
+  }
+
+  try {
+    var res = await sb.from('contratos')
+      .select('*, clientes!cliente_id(*), celulares!celular_id(*), parcelas!contrato_id(*)')
+      .eq('id', id)
+      .limit(1);
+
+    if (res.error) throw new Error(res.error.message);
+    var c = res.data && res.data.length > 0 ? res.data[0] : null;
+    if (!c) throw new Error('Contrato não encontrado.');
+
+    var cli = c.clientes || {};
+    var cel = c.celulares || {};
+    var parcelas = (c.parcelas || []).sort(function(a,b){ return a.numero - b.numero; });
+
+    set('d-contrato', c.numero);
+    set('d-cliente', cli.nome);
+    set('d-cpf', cli.cpf);
+    set('d-tel', cli.telefone);
+    set('d-end', cli.endereco || cli.cidade || '—');
+    set('d-aparelho', (cel.marca || '') + ' ' + (cel.modelo || ''));
+    set('d-imei', cel.imei);
+    set('d-parcelas', (c.num_parcelas || '—') + 'x de ' + fmt(c.valor_parcela));
+    set('d-total', fmt(c.valor_total));
+    set('d-dia', c.dia_vencimento || '—');
+    set('d-venc1', parcelas.length > 0 ? fmtDate(parcelas[0].vencimento) : fmtDate(c.data_inicio));
+    set('ass-nome', cli.nome);
+    set('ass-cpf', cli.cpf);
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('doc').style.display = 'block';
+    document.getElementById('btnArea').style.display = 'flex';
+  } catch(e) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('erro').style.display = 'block';
+    document.getElementById('erro').textContent = '❌ Erro ao carregar: ' + e.message;
+  }
+}
+
+function enviarWhats() {
+  var msg = encodeURIComponent('Olá! Segue seu Termo de Ciência FACILITA CELL:\n' + window.location.href + '\n\nLeia e assine presencialmente. Dúvidas: (45) 99118-7639');
+  window.open('https://wa.me/55' + WHATSAPP + '?text=' + msg, '_blank');
+}
+
+carregar();
+</script>
+</body>
+</html>

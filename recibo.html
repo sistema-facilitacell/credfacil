@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Recibo de Financiamento — FACILITA CELL</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --orange:#E8650A;--green:#1DB954;--red:#E74C3C;--yellow:#F39C12;
+  --font-head:'Syne',sans-serif;--font-body:'DM Sans',sans-serif;
+}
+body{font-family:var(--font-body);font-size:14px;background:#f0f0f0;min-height:100vh;padding:24px}
+
+/* ── TELA DE BUSCA ── */
+#telaBusca{display:flex;align-items:center;justify-content:center;min-height:90vh}
+.busca-box{background:#fff;border-radius:16px;padding:40px;width:100%;max-width:460px;box-shadow:0 4px 40px rgba(0,0,0,.12);text-align:center}
+.busca-logo{font-family:var(--font-head);font-size:28px;font-weight:800;color:var(--orange);letter-spacing:3px;margin-bottom:6px}
+.busca-sub{color:#888;font-size:12px;margin-bottom:28px;letter-spacing:1px}
+.field{margin-bottom:16px;text-align:left}
+.field label{display:block;font-size:10px;color:#888;margin-bottom:6px;font-family:var(--font-head);letter-spacing:1.5px;text-transform:uppercase}
+.field input{width:100%;background:#f8f8f8;border:1.5px solid #e0e0e0;border-radius:8px;padding:12px 14px;color:#111;font-size:14px;font-family:var(--font-body);transition:.2s}
+.field input:focus{outline:none;border-color:var(--orange)}
+.btn-busca{width:100%;padding:14px;background:var(--orange);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;font-family:var(--font-head);letter-spacing:1.5px;cursor:pointer;transition:.2s;margin-top:4px}
+.btn-busca:hover{background:#FF8C35}
+.err-msg{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);border-radius:7px;padding:10px;font-size:12px;color:var(--red);margin-bottom:12px;display:none}
+
+/* ── RECIBO ── */
+#telaRecibo{display:none}
+.recibo-actions{display:flex;gap:10px;justify-content:center;margin-bottom:20px;flex-wrap:wrap}
+.btn-action{padding:10px 22px;border-radius:8px;font-size:13px;font-weight:700;font-family:var(--font-head);cursor:pointer;border:none;transition:.2s;letter-spacing:.5px}
+.btn-action.print{background:var(--orange);color:#fff}
+.btn-action.share{background:var(--green);color:#fff}
+.btn-action.back{background:#fff;color:#555;border:1.5px solid #ddd}
+.btn-action:hover{opacity:.85;transform:translateY(-1px)}
+
+/* ── PAPEL DO RECIBO ── */
+.recibo{background:#fff;max-width:700px;margin:0 auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,.12)}
+
+.recibo-header{background:linear-gradient(135deg,#0A0A0A 0%,#1a1a1a 100%);padding:32px;position:relative;overflow:hidden}
+.recibo-header::before{content:'';position:absolute;top:-30px;right:-30px;width:140px;height:140px;border-radius:50%;background:var(--orange);opacity:.1}
+.recibo-header::after{content:'';position:absolute;bottom:-20px;left:40%;width:100px;height:100px;border-radius:50%;background:var(--orange);opacity:.06}
+.recibo-empresa{font-family:var(--font-head);font-size:26px;font-weight:800;color:var(--orange);letter-spacing:4px}
+.recibo-slogan{font-size:11px;color:#666;margin-top:4px;letter-spacing:2px;text-transform:uppercase}
+.recibo-titulo{font-family:var(--font-head);font-size:13px;font-weight:700;color:#fff;margin-top:20px;letter-spacing:2px;text-transform:uppercase;opacity:.8}
+.recibo-num{font-family:var(--font-head);font-size:32px;font-weight:800;color:var(--orange);letter-spacing:2px;margin-top:4px}
+.recibo-data{font-size:11px;color:#666;margin-top:6px}
+
+.recibo-status{display:flex;align-items:center;gap:8px;background:rgba(29,185,84,.15);border:1px solid rgba(29,185,84,.3);border-radius:20px;padding:6px 16px;width:fit-content;margin-top:14px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.recibo-status span{font-size:12px;color:var(--green);font-family:var(--font-head);font-weight:600;letter-spacing:.5px}
+
+.recibo-body{padding:28px}
+
+.section{margin-bottom:24px}
+.section-title{font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--orange);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #f0f0f0}
+
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.info-item{background:#fafafa;border-radius:8px;padding:12px 14px}
+.info-item.full{grid-column:1/-1}
+.info-label{font-size:10px;color:#999;font-family:var(--font-head);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
+.info-val{font-size:14px;font-weight:600;color:#111;font-family:var(--font-head)}
+
+/* Aparelho */
+.aparelho-card{background:linear-gradient(135deg,#0A0A0A,#1e1e1e);border-radius:10px;padding:18px;display:flex;gap:16px;align-items:center}
+.aparelho-icon{font-size:36px;flex-shrink:0}
+.aparelho-nome{font-family:var(--font-head);font-size:18px;font-weight:700;color:#fff}
+.aparelho-det{font-size:12px;color:#888;margin-top:4px}
+.aparelho-imei{font-size:10px;color:#555;margin-top:6px;font-family:monospace;letter-spacing:1px}
+
+/* Tabela de parcelas */
+.parcelas-table{width:100%;border-collapse:collapse;margin-top:4px}
+.parcelas-table th{font-size:10px;color:#999;font-family:var(--font-head);letter-spacing:1px;text-transform:uppercase;padding:8px 10px;border-bottom:2px solid #f0f0f0;text-align:left}
+.parcelas-table td{padding:10px;border-bottom:1px solid #f5f5f5;font-size:13px;color:#333}
+.parcelas-table tr:last-child td{border-bottom:none}
+.parcelas-table .num{font-family:monospace;font-size:12px;color:#999}
+.parcelas-table .valor{font-weight:600;color:#111;font-family:var(--font-head)}
+.parcelas-table .paga{color:var(--green);font-weight:700}
+.parcelas-table .pendente{color:#999}
+.parcelas-table .atrasada{color:var(--red);font-weight:700}
+
+/* Resumo financeiro */
+.resumo-box{background:linear-gradient(135deg,#fff8f4,#fff);border:1.5px solid rgba(232,101,10,.2);border-radius:10px;padding:20px}
+.resumo-row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px;color:#555;border-bottom:1px solid #f0f0f0}
+.resumo-row:last-child{border-bottom:none;font-size:15px;font-weight:700;color:#111;font-family:var(--font-head);margin-top:4px}
+.resumo-row .label{color:#888}
+.resumo-row .val{font-weight:600}
+.resumo-row.total{font-size:16px;padding-top:12px}
+.resumo-row.total .val{color:var(--orange);font-size:18px}
+
+/* Barra de progresso */
+.progress-section{margin-top:16px}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:#999;margin-bottom:6px}
+.progress-bar{height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),#26d96a);transition:width .6s ease}
+
+/* Informações de pagamento */
+.pagamento-info{background:#f8fdf9;border:1px solid rgba(29,185,84,.2);border-radius:8px;padding:16px;display:flex;gap:12px;align-items:flex-start}
+.pagamento-info .icon{font-size:24px;flex-shrink:0}
+.pagamento-info .text{font-size:12px;color:#555;line-height:1.6}
+.pagamento-info .title{font-family:var(--font-head);font-size:13px;font-weight:700;color:#111;margin-bottom:4px}
+
+.aviso-box{background:#fff8f0;border:1px solid rgba(232,101,10,.2);border-radius:8px;padding:14px;font-size:12px;color:#666;line-height:1.6;margin-top:12px}
+.aviso-box strong{color:var(--orange)}
+
+/* Footer do recibo */
+.recibo-footer{background:#fafafa;border-top:1px solid #f0f0f0;padding:20px 28px;display:flex;justify-content:space-between;align-items:center;flex-wrap:gap}
+.footer-empresa{font-size:11px;color:#aaa}
+.footer-assinatura{text-align:center}
+.assinatura-linha{width:160px;height:1px;background:#ccc;margin:0 auto 4px}
+.assinatura-label{font-size:10px;color:#bbb;letter-spacing:1px;text-transform:uppercase}
+
+.qr-mini{text-align:center}
+.qr-mini p{font-size:10px;color:#aaa;margin-top:6px}
+
+/* Print */
+@media print {
+  body{background:#fff;padding:0}
+  .recibo-actions{display:none!important}
+  .recibo{box-shadow:none;border-radius:0}
+  #telaBusca{display:none!important}
+  #telaRecibo{display:block!important}
+  .parcelas-table tr{break-inside:avoid}
+}
+@media(max-width:600px){
+  .info-grid{grid-template-columns:1fr}
+  .recibo-footer{flex-direction:column;gap:16px;text-align:center}
+  .recibo-body{padding:20px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     TELA DE BUSCA
+══════════════════════════════════════ -->
+<div id="telaBusca">
+  <div class="busca-box">
+    <div class="busca-logo">FACILITA CELL</div>
+    <div class="busca-sub">RECIBO DE FINANCIAMENTO</div>
+    <div class="err-msg" id="erroBusca"></div>
+    <div class="field">
+      <label>Número do Contrato</label>
+      <input id="b-contrato" type="text" placeholder="Ex: FC-001" onkeydown="if(event.key==='Enter')buscarRecibo()"/>
+    </div>
+    <div class="field">
+      <label>CPF do Cliente</label>
+      <input id="b-cpf" type="text" placeholder="000.000.000-00" oninput="mascCPF(this)" onkeydown="if(event.key==='Enter')buscarRecibo()"/>
+    </div>
+    <button class="btn-busca" onclick="buscarRecibo()">🔍 Buscar recibo</button>
+    <p style="margin-top:14px;font-size:11px;color:#bbb">Informe o número do contrato e o CPF para acessar o recibo</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TELA DO RECIBO
+══════════════════════════════════════ -->
+<div id="telaRecibo">
+  <div class="recibo-actions">
+    <button class="btn-action back" onclick="voltarBusca()">← Voltar</button>
+    <button class="btn-action print" onclick="window.print()">🖨️ Imprimir</button>
+    <button class="btn-action share" onclick="compartilhar()">📤 Compartilhar</button>
+  </div>
+
+  <div class="recibo" id="reciboDoc">
+
+    <!-- CABEÇALHO -->
+    <div class="recibo-header">
+      <div class="recibo-empresa" id="r-empresa">FACILITA CELL</div>
+      <div class="recibo-slogan">Seu celular, seu crédito.</div>
+      <div class="recibo-titulo">Recibo de Financiamento</div>
+      <div class="recibo-num" id="r-numero">FC-000</div>
+      <div class="recibo-data" id="r-data">—</div>
+      <div class="recibo-status" id="r-status-badge">
+        <div class="status-dot"></div>
+        <span id="r-status-txt">ATIVO</span>
+      </div>
+    </div>
+
+    <div class="recibo-body">
+
+      <!-- CLIENTE -->
+      <div class="section">
+        <div class="section-title">👤 Dados do Cliente</div>
+        <div class="info-grid">
+          <div class="info-item"><div class="info-label">Nome completo</div><div class="info-val" id="r-nome">—</div></div>
+          <div class="info-item"><div class="info-label">CPF</div><div class="info-val" id="r-cpf">—</div></div>
+          <div class="info-item"><div class="info-label">Telefone</div><div class="info-val" id="r-telefone">—</div></div>
+          <div class="info-item"><div class="info-label">Endereço</div><div class="info-val" id="r-endereco">—</div></div>
+        </div>
+      </div>
+
+      <!-- APARELHO -->
+      <div class="section">
+        <div class="section-title">📱 Aparelho Financiado</div>
+        <div class="aparelho-card">
+          <div class="aparelho-icon">📱</div>
+          <div>
+            <div class="aparelho-nome" id="r-aparelho">—</div>
+            <div class="aparelho-det" id="r-aparelho-det">—</div>
+            <div class="aparelho-imei" id="r-imei">IMEI: —</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESUMO FINANCEIRO -->
+      <div class="section">
+        <div class="section-title">💰 Resumo do Financiamento</div>
+        <div class="resumo-box">
+          <div class="resumo-row"><span class="label">Valor do aparelho</span><span class="val" id="r-valor-aparelho">—</span></div>
+          <div class="resumo-row"><span class="label">Entrada paga</span><span class="val" id="r-entrada">—</span></div>
+          <div class="resumo-row"><span class="label">Valor financiado</span><span class="val" id="r-financiado">—</span></div>
+          <div class="resumo-row"><span class="label">Taxa de juros</span><span class="val" id="r-juros">—% a.m.</span></div>
+          <div class="resumo-row"><span class="label">Parcelas</span><span class="val" id="r-parcelas">— x de R$ —</span></div>
+          <div class="resumo-row"><span class="label">Primeiro vencimento</span><span class="val" id="r-primeiro-venc">—</span></div>
+          <div class="resumo-row total"><span class="label">TOTAL A PAGAR</span><span class="val" id="r-total">—</span></div>
+        </div>
+
+        <!-- Barra de progresso -->
+        <div class="progress-section">
+          <div class="progress-label">
+            <span id="r-prog-label">Parcelas pagas: —</span>
+            <span id="r-prog-pct">0%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="r-prog-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <!-- PARCELAS -->
+      <div class="section">
+        <div class="section-title">📋 Detalhamento das Parcelas</div>
+        <table class="parcelas-table">
+          <thead><tr><th>#</th><th>Vencimento</th><th>Valor</th><th>Multa</th><th>Status</th></tr></thead>
+          <tbody id="r-parcelas-lista">
+            <tr><td colspan="5" style="text-align:center;color:#bbb;padding:20px">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGAMENTO -->
+      <div class="section">
+        <div class="section-title">💳 Formas de Pagamento</div>
+        <div class="pagamento-info">
+          <div class="icon">💚</div>
+          <div class="text">
+            <div class="title">PIX e Boleto disponíveis</div>
+            Acesse o portal do cliente para gerar PIX ou boleto de qualquer parcela.
+            O aparelho é desbloqueado automaticamente após a confirmação do pagamento.
+          </div>
+        </div>
+        <div class="aviso-box">
+          ⚠️ <strong>Atenção:</strong> O aparelho pode ser <strong>bloqueado remotamente</strong> após <strong id="r-dias-trava">30 dias</strong> de inadimplência. O desbloqueio ocorre em até 2 horas após a confirmação do pagamento. Não venda, doe ou transfira o aparelho enquanto houver parcelas em aberto.
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RODAPÉ -->
+    <div class="recibo-footer">
+      <div class="footer-empresa">
+        <div style="font-family:var(--font-head);font-size:12px;color:#555;font-weight:700" id="r-emp-nome">FACILITA CELL</div>
+        <div style="margin-top:2px" id="r-emp-end">—</div>
+        <div style="margin-top:2px" id="r-emp-contato">—</div>
+        <div style="margin-top:6px;font-size:10px;color:#ccc">Documento gerado em <span id="r-gerado-em">—</span></div>
+      </div>
+      <div class="footer-assinatura">
+        <div class="assinatura-linha"></div>
+        <div class="assinatura-label">Assinatura do Cliente</div>
+        <div style="font-size:10px;color:#bbb;margin-top:4px" id="r-assinante">—</div>
+      </div>
+      <div class="footer-assinatura">
+        <div class="assinatura-linha"></div>
+        <div class="assinatura-label">Responsável FACILITA CELL</div>
+        <div style="font-size:10px;color:#bbb;margin-top:4px" id="r-vendedor-nome">—</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ══════════════════════════════════════════════
+// CONFIGURAÇÃO
+// ══════════════════════════════════════════════
+const CONF = {
+  SUPABASE_URL:      'https://lgtnarralybqkevsrczn.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxndG5hcnJhbHlicWtldnNyY3puIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NDY5NTIsImV4cCI6MjA5MjEyMjk1Mn0.7wClczE45DQIXObEQDXvljhZIBLXuS8a0tUmTe9xtZQ',
+  EMPRESA: {
+    NOME:      'FACILITA CELL',
+    ENDERECO:  'Av. Morenitas, N78, Jardim das Flores, Porto Meira, Foz do Iguaçu/PR',
+    TELEFONE:  '(45) 99118-7639',
+    EMAIL:     'FACILITACELL2026@GMAIL.COM',
+    DIAS_TRAVA: 30,
+  }
+};
+
+let sb = null;
+try {
+  const { createClient } = supabase;
+  if (!CONF.SUPABASE_URL.includes('SEU_PROJETO')) sb = createClient(CONF.SUPABASE_URL, CONF.SUPABASE_ANON_KEY);
+} catch(e) {}
+
+// ── Auto-preencher se vier por URL ──
+window.onload = () => {
+  const p = new URLSearchParams(location.search);
+  if (p.get('contrato') && p.get('cpf')) {
+    document.getElementById('b-contrato').value = p.get('contrato');
+    document.getElementById('b-cpf').value = p.get('cpf');
+    buscarRecibo();
+  }
+  document.getElementById('r-dias-trava').textContent = CONF.EMPRESA.DIAS_TRAVA;
+};
+
+// ══════════════════════════════════════════════
+// BUSCAR RECIBO
+// ══════════════════════════════════════════════
+async function buscarRecibo() {
+  const numContrato = document.getElementById('b-contrato').value.trim().toUpperCase();
+  const cpf = document.getElementById('b-cpf').value.replace(/\D/g,'');
+  const err = document.getElementById('erroBusca');
+
+  if (!numContrato || !cpf) { mostrarErro(err, 'Preencha o número do contrato e o CPF.'); return; }
+  err.style.display = 'none';
+
+  const btn = document.querySelector('.btn-busca');
+  btn.textContent = 'Buscando...'; btn.disabled = true;
+
+  if (!sb) {
+    // Modo demonstração: gerar recibo fictício para visualização do layout
+    renderReciboDEMO(numContrato, cpf);
+    btn.textContent = '🔍 Buscar recibo'; btn.disabled = false;
+    return;
+  }
+
+  const { data: contratoArr, error } = await sb
+    .from('contratos')
+    .select('*, clientes!cliente_id(*), celulares!celular_id(*), parcelas!contrato_id(*), usuarios!vendedor_id(nome)')
+    .eq('numero', numContrato)
+    .limit(1);
+  const contrato = contratoArr && contratoArr.length > 0 ? contratoArr[0] : null;
+
+  btn.textContent = '🔍 Buscar recibo'; btn.disabled = false;
+
+  if (error || !contrato) { mostrarErro(err, 'Contrato não encontrado. Verifique o número e o CPF.'); return; }
+
+  // Validar CPF
+  const cpfCliente = (contrato.clientes?.cpf || '').replace(/\D/g,'');
+  if (cpfCliente !== cpf) { mostrarErro(err, 'CPF não corresponde ao contrato informado.'); return; }
+
+  renderRecibo(contrato);
+}
+
+// ══════════════════════════════════════════════
+// RENDERIZAR RECIBO (dados reais)
+// ══════════════════════════════════════════════
+function renderRecibo(c) {
+  const cl = c.clientes || {};
+  const cel = c.celulares || {};
+  const parcelas = (c.parcelas || []).sort((a,b) => a.numero - b.numero);
+  const vendedor = c.usuarios?.nome || 'FACILITA CELL';
+
+  // Header
+  document.getElementById('r-numero').textContent = c.numero;
+  document.getElementById('r-data').textContent = `Contrato firmado em ${new Date(c.data_inicio+'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'})}`;
+  
+  const statusMap = { ativo:'ATIVO', quitado:'QUITADO', inadimplente:'INADIMPLENTE', cancelado:'CANCELADO' };
+  document.getElementById('r-status-txt').textContent = statusMap[c.status] || c.status?.toUpperCase();
+  const badge = document.getElementById('r-status-badge');
+  if (c.status === 'quitado') { badge.style.background = 'rgba(29,185,84,.15)'; badge.querySelector('.status-dot').style.background = 'var(--green)'; }
+  else if (c.status === 'inadimplente') { badge.style.background = 'rgba(231,76,60,.15)'; badge.querySelector('.status-dot').style.background = 'var(--red)'; }
+
+  // Cliente
+  document.getElementById('r-nome').textContent = cl.nome || '—';
+  document.getElementById('r-cpf').textContent = formatCPF(cl.cpf);
+  document.getElementById('r-telefone').textContent = cl.telefone || '—';
+  document.getElementById('r-endereco').textContent = [cl.endereco, cl.numero, cl.bairro, cl.cidade, cl.estado].filter(Boolean).join(', ') || '—';
+
+  // Aparelho
+  document.getElementById('r-aparelho').textContent = `${cel.marca} ${cel.modelo}`;
+  document.getElementById('r-aparelho-det').textContent = [cel.cor, cel.armazenamento, cel.ram].filter(Boolean).join(' • ') || '—';
+  document.getElementById('r-imei').textContent = `IMEI: ${cel.imei || '—'}`;
+
+  // Financeiro
+  const fmt = v => `R$ ${Number(v||0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+  document.getElementById('r-valor-aparelho').textContent = fmt(c.valor_aparelho);
+  document.getElementById('r-entrada').textContent = fmt(c.valor_entrada);
+  document.getElementById('r-financiado').textContent = fmt(c.valor_financiado);
+  document.getElementById('r-juros').textContent = `${Number(c.taxa_juros||0).toFixed(1)}% a.m.`;
+  document.getElementById('r-parcelas').textContent = `${c.num_parcelas}x de ${fmt(c.valor_parcela)}`;
+  document.getElementById('r-total').textContent = fmt(c.valor_total);
+
+  // Primeiro vencimento
+  const primeira = parcelas[0];
+  if (primeira) document.getElementById('r-primeiro-venc').textContent = new Date(primeira.vencimento+'T00:00:00').toLocaleDateString('pt-BR');
+
+  // Progresso
+  const pagas = parcelas.filter(p => p.status === 'pago').length;
+  const pct = c.num_parcelas > 0 ? Math.round(pagas / c.num_parcelas * 100) : 0;
+  document.getElementById('r-prog-label').textContent = `Parcelas pagas: ${pagas} de ${c.num_parcelas}`;
+  document.getElementById('r-prog-pct').textContent = pct + '%';
+  document.getElementById('r-prog-bar').style.width = pct + '%';
+
+  // Lista de parcelas
+  const statusCls = { pago:'paga', pendente:'pendente', atrasado:'atrasada', cancelado:'pendente' };
+  const statusTxt = { pago:'✅ Pago', pendente:'⏳ Pendente', atrasado:'🔴 Atrasado', cancelado:'—' };
+  document.getElementById('r-parcelas-lista').innerHTML = parcelas.map(p => `
+    <tr>
+      <td class="num">${String(p.numero).padStart(2,'0')}/${c.num_parcelas}</td>
+      <td>${new Date(p.vencimento+'T00:00:00').toLocaleDateString('pt-BR')}</td>
+      <td class="valor">${fmt(p.valor)}</td>
+      <td>${p.valor_multa > 0 ? `<span style="color:var(--red)">+${fmt(p.valor_multa)}</span>` : '—'}</td>
+      <td class="${statusCls[p.status]||''}">${statusTxt[p.status]||p.status}</td>
+    </tr>`).join('');
+
+  // Footer
+  document.getElementById('r-emp-nome').textContent = CONF.EMPRESA.NOME;
+  document.getElementById('r-emp-end').textContent = CONF.EMPRESA.ENDERECO;
+  document.getElementById('r-emp-contato').textContent = `${CONF.EMPRESA.TELEFONE} • ${CONF.EMPRESA.EMAIL}`;
+  document.getElementById('r-gerado-em').textContent = new Date().toLocaleString('pt-BR');
+  document.getElementById('r-assinante').textContent = cl.nome || '—';
+  document.getElementById('r-vendedor-nome').textContent = vendedor;
+
+  // Exibir
+  document.getElementById('telaBusca').style.display = 'none';
+  document.getElementById('telaRecibo').style.display = 'block';
+  window.scrollTo(0,0);
+}
+
+// ══════════════════════════════════════════════
+// RENDER DEMO (sem banco configurado)
+// ══════════════════════════════════════════════
+function renderReciboDEMO(num, cpf) {
+  const hoje = new Date();
+  const fmtDate = d => d.toLocaleDateString('pt-BR');
+  const fmt = v => `R$ ${Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+
+  document.getElementById('r-numero').textContent = num || 'FC-001';
+  document.getElementById('r-data').textContent = `Contrato firmado em ${hoje.toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'})}`;
+  document.getElementById('r-status-txt').textContent = 'DEMONSTRAÇÃO';
+
+  document.getElementById('r-nome').textContent = '[ Nome do Cliente ]';
+  document.getElementById('r-cpf').textContent = formatCPF(cpf);
+  document.getElementById('r-telefone').textContent = '(45) 99118-7639';
+  document.getElementById('r-endereco').textContent = '[ Endereço ]';
+  document.getElementById('r-aparelho').textContent = '[ Marca e Modelo ]';
+  document.getElementById('r-aparelho-det').textContent = '[ Cor • Armazenamento ]';
+  document.getElementById('r-imei').textContent = 'IMEI: ••• ••• ••• •••••';
+  document.getElementById('r-valor-aparelho').textContent = fmt(1499);
+  document.getElementById('r-entrada').textContent = fmt(0);
+  document.getElementById('r-financiado').textContent = fmt(1499);
+  document.getElementById('r-juros').textContent = '3.5% a.m.';
+  document.getElementById('r-parcelas').textContent = `12x de ${fmt(149.90)}`;
+  document.getElementById('r-primeiro-venc').textContent = fmtDate(new Date(hoje.setDate(hoje.getDate()+30)));
+  document.getElementById('r-total').textContent = fmt(1798.80);
+  document.getElementById('r-prog-label').textContent = 'Parcelas pagas: 1 de 12';
+  document.getElementById('r-prog-pct').textContent = '8%';
+  document.getElementById('r-prog-bar').style.width = '8%';
+
+  // Parcelas demo
+  const hoje2 = new Date();
+  document.getElementById('r-parcelas-lista').innerHTML = Array.from({length:12},(_,i) => {
+    const venc = new Date(hoje2); venc.setMonth(venc.getMonth()+i+1);
+    const status = i===0 ? 'pago' : 'pendente';
+    return `<tr>
+      <td class="num">${String(i+1).padStart(2,'0')}/12</td>
+      <td>${fmtDate(venc)}</td>
+      <td class="valor">${fmt(149.90)}</td>
+      <td>—</td>
+      <td class="${status==='pago'?'paga':'pendente'}">${status==='pago'?'✅ Pago':'⏳ Pendente'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('r-emp-nome').textContent = CONF.EMPRESA.NOME;
+  document.getElementById('r-emp-end').textContent = CONF.EMPRESA.ENDERECO;
+  document.getElementById('r-emp-contato').textContent = `${CONF.EMPRESA.TELEFONE} • ${CONF.EMPRESA.EMAIL}`;
+  document.getElementById('r-gerado-em').textContent = new Date().toLocaleString('pt-BR');
+  document.getElementById('r-assinante').textContent = '[ Nome do Cliente ]';
+  document.getElementById('r-vendedor-nome').textContent = 'Administrador';
+
+  document.getElementById('telaBusca').style.display = 'none';
+  document.getElementById('telaRecibo').style.display = 'block';
+  window.scrollTo(0,0);
+}
+
+// ══════════════════════════════════════════════
+// UTILITÁRIOS
+// ══════════════════════════════════════════════
+function voltarBusca() {
+  document.getElementById('telaRecibo').style.display = 'none';
+  document.getElementById('telaBusca').style.display = 'flex';
+}
+
+async function compartilhar() {
+  const url = window.location.href;
+  if (navigator.share) {
+    navigator.share({ title: 'Recibo FACILITA CELL', text: 'Acesse seu recibo de financiamento', url });
+  } else {
+    await navigator.clipboard.writeText(url);
+    alert('Link copiado!');
+  }
+}
+
+function mostrarErro(el, msg) { el.textContent = msg; el.style.display = 'block'; }
+function formatCPF(cpf) {
+  if (!cpf) return '—';
+  const n = cpf.replace(/\D/g,'');
+  if (n.length !== 11) return cpf;
+  return `${n.slice(0,3)}.${n.slice(3,6)}.${n.slice(6,9)}-${n.slice(9)}`;
+}
+function mascCPF(el) {
+  let v = el.value.replace(/\D/g,'').slice(0,11);
+  if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/,'$1.$2.$3-$4');
+  else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{0,3})/,'$1.$2.$3');
+  else if (v.length > 3) v = v.replace(/(\d{3})(\d{0,3})/,'$1.$2');
+  el.value = v;
+}
+</script>
+</body>
+</html>
