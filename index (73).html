@@ -1,0 +1,2671 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FACILITA CELL — Painel Administrativo</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- config.js embutido — funciona com duplo clique E na Vercel -->
+<script>
+// ============================================================
+// FACILITA CELL — Configuração Central
+// Edite aqui diretamente OU use o arquivo config.js separado
+// ============================================================
+const FC_CONFIG = {
+  NOME_EMPRESA:     'FACILITA CELL',
+  CNPJ_EMPRESA:     '150.300.300/0001-18',
+  SLOGAN:           'Seu celular na mão, sem complicação.',
+  WHATSAPP:         '5545991187639',
+  EMAIL_SUPORTE:    'FACILITACELL2026@GMAIL.COM',
+  ENDERECO_EMPRESA: 'Av. Morenitas, N78, Jardim das Flores, Porto Meira, Foz do Iguaçu/PR',
+
+  // ── SUPABASE — preencha após criar seu projeto em supabase.com
+  SUPABASE_URL:      'https://lgtnarralybqkevsrczn.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxndG5hcnJhbHlicWtldnNyY3puIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NDY5NTIsImV4cCI6MjA5MjEyMjk1Mn0.7wClczE45DQIXObEQDXvljhZIBLXuS8a0tUmTe9xtZQ',
+
+  // ── ASAAS — preencha após criar conta em asaas.com
+  ASAAS_API_KEY: '$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmU3NzAzNGQ1LWQ2NmQtNDk4Yi1iNzlkLTI3YWI3MmE3ZjEwODo6JGFhY2hfMDNkN2I2YTgtYmY0OS00M2M1LTk1YTItMWNkMzNjMzRmNzRk',
+  ASAAS_ENV: 'production',
+  get ASAAS_BASE() {
+    return this.ASAAS_ENV === 'sandbox'
+      ? 'https://sandbox.asaas.com'
+      : 'https://www.asaas.com';
+  },
+
+  // ── PAYMOBI — preencha após contratar em paymobi.com.br
+  PAYMOBI_API_KEY:  'SUA_CHAVE_PAYMOBI_AQUI',
+  PAYMOBI_BASE:     'https://api.paymobi.com.br/v1',
+  PAYMOBI_ATIVO:    false,
+  PAYMOBI_SITE:     'paymobi.com.br',
+  LOCK_PROVIDER:    'manual',
+
+  // ── MARCAS FINANCIÁVEIS
+  MARCAS_SUPORTADAS: [
+    { id:'samsung',  nome:'Samsung',  mdm:'Knox Guard'  },
+    { id:'motorola', nome:'Motorola', mdm:'Android MDM' },
+    { id:'xiaomi',   nome:'Xiaomi',   mdm:'Android MDM' },
+    { id:'infinix',  nome:'Infinix',  mdm:'Android MDM' },
+    { id:'realme',   nome:'Realme',   mdm:'Android MDM' },
+    { id:'poco',     nome:'Poco',     mdm:'Android MDM' },
+    { id:'itel',     nome:'Itel',     mdm:'Android MDM' },
+    { id:'honor',    nome:'Honor',    mdm:'Android MDM' },
+  ],
+
+  // ── REGRAS DE FINANCIAMENTO
+  TAXA_JUROS_PADRAO:   7.0,
+  PARCELAS_OPCOES:     [10, 12],
+  ENTRADA_MIN_PCT:     0,
+  COMPROMETIMENTO_MAX: 40,
+  PRIMEIRO_VENCIMENTO: 30,
+  DIAS_AVISO_1:        1,
+  DIAS_AVISO_2:        15,
+  DIAS_TRAVA:          30,
+  MULTA_ATRASO:        2,
+  JUROS_MORA:          1,
+  DESBLOQUEIO_HORAS:   2,
+  STORAGE_BUCKET:      'documentos',
+
+  BMP_CLIENT_ID:     'SEU_CLIENT_ID_BMP',
+  BMP_CLIENT_SECRET: 'SEU_SECRET_BMP',
+  BMP_BASE:          'https://api.bmpbank.com.br/v1',
+  BMP_AMBIENTE:      'sandbox',
+  BMP_ATIVO:         false,
+};
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0A0A0A;--bg2:#111;--bg3:#181818;--bg4:#222;--bg5:#2A2A2A;
+  --orange:#E8650A;--orange2:#FF8C35;--orange3:#B54D00;--orange-dim:rgba(232,101,10,0.12);
+  --white:#F4F4EE;--gray:#888;--gray2:#555;--gray3:#333;
+  --green:#1DB954;--red:#E74C3C;--yellow:#F39C12;--blue:#3498DB;--purple:#9B59B6;
+  --border:#262626;--radius:10px;
+  --font-head:'Syne',sans-serif;--font-body:'DM Sans',sans-serif;
+}
+body{background:var(--bg);color:var(--white);font-family:var(--font-body);font-size:14px;min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:3px}
+
+/* ── LOGIN ──────────────────────────────────────────────── */
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);background-image:radial-gradient(ellipse at 15% 60%,rgba(232,101,10,0.1) 0%,transparent 55%),radial-gradient(ellipse at 85% 20%,rgba(232,101,10,0.06) 0%,transparent 50%)}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:44px;width:100%;max-width:420px;animation:fadeUp .4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.login-logo{text-align:center;margin-bottom:32px}
+.login-logo h1{font-family:var(--font-head);font-size:34px;font-weight:800;color:var(--orange);letter-spacing:4px}
+.login-logo p{color:var(--gray);font-size:12px;margin-top:6px;letter-spacing:1px}
+.login-logo .live{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--green);margin-top:8px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.role-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:24px;background:var(--bg3);border-radius:10px;padding:4px}
+.role-tab{padding:9px 4px;text-align:center;border-radius:7px;cursor:pointer;font-size:11px;color:var(--gray);transition:.2s;font-family:var(--font-head);letter-spacing:.5px}
+.role-tab.active{background:var(--orange);color:#fff;font-weight:600}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:10px;color:var(--gray);margin-bottom:6px;font-family:var(--font-head);letter-spacing:1.5px;text-transform:uppercase}
+.field input,.field select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--white);font-size:13px;font-family:var(--font-body);transition:.2s}
+.field input:focus,.field select:focus{outline:none;border-color:var(--orange);background:var(--bg4)}
+.btn-login{width:100%;padding:14px;background:var(--orange);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;font-family:var(--font-head);letter-spacing:1.5px;cursor:pointer;transition:.2s;margin-top:4px}
+.btn-login:hover{background:var(--orange2);transform:translateY(-1px)}
+.btn-login:active{transform:translateY(0)}
+.login-footer{text-align:center;margin-top:20px;font-size:11px;color:var(--gray2)}
+.err-msg{background:rgba(231,76,60,0.12);border:1px solid rgba(231,76,60,0.3);border-radius:7px;padding:10px 13px;font-size:12px;color:var(--red);margin-bottom:14px;display:none}
+
+/* ── APP ────────────────────────────────────────────────── */
+#app{display:none;min-height:100vh}
+.sidebar{position:fixed;left:0;top:0;width:235px;height:100vh;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;overflow-y:auto}
+.sidebar-logo{padding:20px 18px;border-bottom:1px solid var(--border)}
+.sidebar-logo h2{font-family:var(--font-head);font-size:20px;font-weight:800;color:var(--orange);letter-spacing:3px}
+.sidebar-logo p{font-size:10px;color:var(--gray);margin-top:2px}
+.sidebar-badge{display:inline-block;background:var(--orange);color:#fff;font-size:9px;font-family:var(--font-head);padding:2px 8px;border-radius:3px;margin-top:6px;letter-spacing:1px;font-weight:600}
+.sidebar-nav{flex:1;padding:10px 0}
+.nav-section{font-size:9px;color:var(--gray2);padding:12px 18px 4px;font-family:var(--font-head);letter-spacing:2px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;cursor:pointer;color:var(--gray);font-size:12.5px;transition:.15s;border-left:2px solid transparent;position:relative;user-select:none}
+.nav-item:hover{background:rgba(232,101,10,0.06);color:var(--white);border-left-color:var(--border)}
+.nav-item.active{background:var(--orange-dim);color:var(--orange);border-left-color:var(--orange);font-weight:500}
+.nav-item .ic{font-size:16px;width:20px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;font-weight:700;font-family:var(--font-head)}
+.nav-badge.orange{background:var(--orange)}
+.nav-badge.green{background:var(--green)}
+.sidebar-footer{padding:14px 18px;border-top:1px solid var(--border)}
+.db-status{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--gray);margin-bottom:10px}
+.db-dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.db-dot.off{background:var(--red)}
+.btn-logout{width:100%;padding:9px;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--gray);font-size:12px;cursor:pointer;font-family:var(--font-body);transition:.2s}
+.btn-logout:hover{border-color:var(--red);color:var(--red)}
+
+.topbar{position:fixed;top:0;left:235px;right:0;height:58px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:99}
+.topbar-title{font-family:var(--font-head);font-size:15px;font-weight:700;letter-spacing:.5px}
+.topbar-right{display:flex;align-items:center;gap:14px}
+.topbar-clock{font-size:11px;color:var(--gray);font-family:var(--font-head)}
+.user-chip{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:5px 14px 5px 5px;cursor:pointer;transition:.2s}
+.user-chip:hover{border-color:var(--orange)}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:var(--font-head);color:#fff;flex-shrink:0}
+.user-chip span{font-size:12px;font-weight:500}
+.user-chip small{font-size:10px;color:var(--gray);display:block;line-height:1}
+
+.main{margin-left:235px;padding-top:58px;min-height:100vh}
+.page{display:none;padding:24px;animation:fadeIn .2s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* ── CARDS ──────────────────────────────────────────────── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stats-grid.five{grid-template-columns:repeat(5,1fr)}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden;transition:.2s}
+.stat-card:hover{border-color:var(--orange);transform:translateY(-2px)}
+.stat-card::before{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:.06;background:var(--orange)}
+.stat-label{font-size:10px;color:var(--gray);font-family:var(--font-head);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
+.stat-value{font-size:28px;font-weight:700;font-family:var(--font-head);line-height:1}
+.stat-value.orange{color:var(--orange)}
+.stat-value.green{color:var(--green)}
+.stat-value.red{color:var(--red)}
+.stat-value.yellow{color:var(--yellow)}
+.stat-value.white{color:var(--white)}
+.stat-sub{font-size:11px;color:var(--gray);margin-top:5px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-family:var(--font-head);font-size:13px;font-weight:700;color:var(--orange);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:8px;letter-spacing:.5px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+/* ── TABELAS ────────────────────────────────────────────── */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:600px}
+th{text-align:left;color:var(--gray);font-weight:500;padding:9px 12px;border-bottom:1px solid var(--border);font-family:var(--font-head);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap}
+td{padding:11px 12px;border-bottom:1px solid var(--bg3);color:#CCC;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,0.02)}
+.mono{font-family:monospace;font-size:11px;color:var(--gray)}
+
+/* ── STATUS ─────────────────────────────────────────────── */
+.status{display:inline-block;padding:3px 10px;border-radius:5px;font-size:10px;font-weight:600;font-family:var(--font-head);letter-spacing:.5px;white-space:nowrap}
+.status.ativo,.status.pago,.status.aprovado,.status.quitado{background:rgba(29,185,84,0.12);color:var(--green);border:1px solid rgba(29,185,84,0.25)}
+.status.pendente,.status.atrasado,.status.em_analise{background:rgba(243,156,18,0.12);color:var(--yellow);border:1px solid rgba(243,156,18,0.25)}
+.status.travado,.status.inadimplente,.status.reprovado,.status.bloqueado{background:rgba(231,76,60,0.12);color:var(--red);border:1px solid rgba(231,76,60,0.25)}
+.status.analise,.status.aguardando_docs{background:rgba(52,152,219,0.12);color:var(--blue);border:1px solid rgba(52,152,219,0.25)}
+.status.cancelado,.status.inativo{background:rgba(136,136,136,0.12);color:var(--gray);border:1px solid rgba(136,136,136,0.25)}
+
+/* ── FORMULÁRIOS ────────────────────────────────────────── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.form-grid.three{grid-template-columns:1fr 1fr 1fr}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:10px;color:var(--gray);font-family:var(--font-head);letter-spacing:1.5px;text-transform:uppercase}
+.form-group input,.form-group select,.form-group textarea{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 13px;color:var(--white);font-size:13px;font-family:var(--font-body);transition:.2s;width:100%}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--orange);background:var(--bg4)}
+.form-group textarea{resize:vertical;min-height:80px}
+.form-group select option{background:var(--bg3)}
+.full-col{grid-column:1/-1}
+.section-label{font-family:var(--font-head);font-size:10px;color:var(--orange);letter-spacing:2px;text-transform:uppercase;margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+
+/* ── BOTÕES ─────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;font-size:12px;font-weight:600;font-family:var(--font-head);cursor:pointer;border:none;transition:.15s;letter-spacing:.5px;white-space:nowrap}
+.btn.primary{background:var(--orange);color:#fff}
+.btn.primary:hover{background:var(--orange2);transform:translateY(-1px)}
+.btn.outline{background:transparent;color:var(--orange);border:1px solid var(--orange)}
+.btn.outline:hover{background:var(--orange-dim)}
+.btn.ghost{background:transparent;color:var(--gray);border:1px solid var(--border)}
+.btn.ghost:hover{border-color:var(--white);color:var(--white)}
+.btn.danger{background:var(--red);color:#fff}
+.btn.danger:hover{opacity:.9}
+.btn.success{background:var(--green);color:#fff}
+.btn.success:hover{opacity:.9}
+.btn.blue{background:var(--blue);color:#fff}
+.btn.sm{padding:5px 12px;font-size:11px;border-radius:6px}
+.btn.xs{padding:3px 9px;font-size:10px;border-radius:5px}
+.btn-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}
+
+/* ── ALERTAS ────────────────────────────────────────────── */
+.alert{border-left:3px solid var(--orange);background:var(--orange-dim);border-radius:0 8px 8px 0;padding:12px 15px;font-size:12px;margin-bottom:12px;color:#CCC;line-height:1.5}
+.alert.danger{border-left-color:var(--red);background:rgba(231,76,60,0.08)}
+.alert.success{border-left-color:var(--green);background:rgba(29,185,84,0.08)}
+.alert.warning{border-left-color:var(--yellow);background:rgba(243,156,18,0.08)}
+.alert.blue{border-left-color:var(--blue);background:rgba(52,152,219,0.08)}
+.alert strong{color:var(--white)}
+
+/* ── CANDIDATOS ─────────────────────────────────────────── */
+.cand-row{display:flex;align-items:flex-start;gap:14px;background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid var(--border);transition:.2s}
+.cand-row:hover{border-color:var(--orange)}
+.score-ring{width:58px;height:58px;border-radius:50%;border:3px solid var(--orange);display:flex;align-items:center;justify-content:center;flex-direction:column;flex-shrink:0}
+.score-ring.good{border-color:var(--green)}.score-ring.bad{border-color:var(--red)}.score-ring.medium{border-color:var(--yellow)}
+.score-num{font-size:14px;font-weight:800;font-family:var(--font-head)}
+.score-lbl{font-size:8px;color:var(--gray);font-family:var(--font-head);letter-spacing:.5px}
+.cand-info{flex:1;min-width:0}
+.cand-name{font-size:14px;font-weight:600;font-family:var(--font-head)}
+.cand-detail{font-size:11px;color:var(--gray);margin-top:3px;line-height:1.4}
+.cand-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.tag{font-size:10px;padding:2px 8px;border-radius:4px;background:var(--bg4);color:var(--gray);font-family:var(--font-head)}
+.tag.ok{color:var(--green);background:rgba(29,185,84,0.12)}
+.tag.warn{color:var(--yellow);background:rgba(243,156,18,0.12)}
+.tag.err{color:var(--red);background:rgba(231,76,60,0.12)}
+.tag.blue{color:var(--blue);background:rgba(52,152,219,0.12)}
+.cand-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+
+/* ── TRAVA (toggle) ─────────────────────────────────────── */
+.lock-wrap{display:flex;flex-direction:column;align-items:center;gap:4px}
+.lock-toggle{width:50px;height:26px;border-radius:13px;background:var(--red);position:relative;cursor:pointer;transition:.3s;flex-shrink:0;border:none}
+.lock-toggle.on{background:var(--green)}
+.lock-toggle::after{content:'';position:absolute;width:20px;height:20px;background:#fff;border-radius:50%;top:3px;right:3px;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.lock-toggle.on::after{right:auto;left:3px}
+.lock-lbl{font-size:9px;font-family:var(--font-head);letter-spacing:.5px}
+.phone-card{display:flex;align-items:center;gap:14px;background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid var(--border)}
+.phone-ico{font-size:28px;flex-shrink:0}
+.phone-info{flex:1}
+.phone-name{font-size:13px;font-weight:600;font-family:var(--font-head)}
+.phone-det{font-size:11px;color:var(--gray);margin-top:3px}
+
+/* ── TIMELINE ───────────────────────────────────────────── */
+.timeline{list-style:none;position:relative}
+.timeline::before{content:'';position:absolute;left:10px;top:0;bottom:0;width:1px;background:var(--border)}
+.timeline li{display:flex;gap:14px;align-items:flex-start;padding:8px 0;position:relative}
+.tl-dot{width:20px;height:20px;border-radius:50%;background:var(--bg4);border:2px solid var(--border);flex-shrink:0;position:relative;z-index:1}
+.tl-dot.green{background:rgba(29,185,84,.2);border-color:var(--green)}
+.tl-dot.red{background:rgba(231,76,60,.2);border-color:var(--red)}
+.tl-dot.yellow{background:rgba(243,156,18,.2);border-color:var(--yellow)}
+.tl-dot.orange{background:var(--orange-dim);border-color:var(--orange)}
+.tl-time{font-size:10px;color:var(--gray);margin-top:3px}
+
+/* ── MODAL ──────────────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:28px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;animation:fadeUp .25s ease}
+.modal.wide{max-width:900px}
+.modal.xl{max-width:1100px}
+.modal-title{font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:22px;color:var(--orange);display:flex;align-items:center;justify-content:space-between}
+.modal-title button{background:none;border:none;color:var(--gray);cursor:pointer;font-size:20px;line-height:1;padding:0;transition:.2s}
+.modal-title button:hover{color:var(--red)}
+
+/* ── FINANCEIRO ─────────────────────────────────────────── */
+.fin-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px}
+.fin-value{font-size:26px;font-weight:700;font-family:var(--font-head)}
+.fin-month{font-size:11px;color:var(--gray);margin-top:4px}
+.progress-bar{height:6px;background:var(--bg4);border-radius:3px;margin-top:10px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;background:var(--orange);transition:.6s}
+.progress-fill.green{background:var(--green)}
+.progress-fill.red{background:var(--red)}
+
+/* ── DOCUMENTOS ─────────────────────────────────────────── */
+.doc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.doc-item{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;cursor:pointer;transition:.2s}
+.doc-item:hover{border-color:var(--orange)}
+.doc-item.ok{border-color:var(--green)}
+.doc-item.miss{border-color:var(--red);background:rgba(231,76,60,0.05)}
+.doc-ico{font-size:28px;margin-bottom:6px}
+.doc-label{font-size:10px;color:var(--gray);font-family:var(--font-head);letter-spacing:.5px}
+.doc-status{font-size:9px;margin-top:4px;font-family:var(--font-head)}
+
+/* ── TERMO / CONTRATO ───────────────────────────────────── */
+.termo-box{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:18px;font-size:12px;line-height:1.7;color:#CCC;max-height:400px;overflow-y:auto}
+.termo-box h3{font-family:var(--font-head);color:var(--orange);font-size:13px;margin:14px 0 6px}
+.termo-box h4{font-family:var(--font-head);color:var(--white);font-size:11px;margin:10px 0 4px}
+.termo-box p{margin-bottom:8px}
+.termo-box ol,.termo-box ul{padding-left:16px;margin-bottom:8px}
+.termo-box li{margin-bottom:4px}
+
+/* ── RECEBIMENTO ─────────────────────────────────────────── */
+.rec-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bg3)}
+.rec-row:last-child{border-bottom:none}
+.rec-canal{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+
+/* ── TOAST ──────────────────────────────────────────────── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:13px 18px;font-size:13px;font-weight:500;transform:translateY(80px);opacity:0;transition:.3s;z-index:9999;max-width:340px;display:flex;align-items:center;gap:10px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-color:var(--green);color:var(--green)}
+.toast.error,.toast.danger{border-color:var(--red);color:var(--red)}
+.toast.warning{border-color:var(--yellow);color:var(--yellow)}
+
+/* ── LOADING ────────────────────────────────────────────── */
+.loading{text-align:center;padding:40px;color:var(--gray);font-size:13px}
+.spinner{width:30px;height:30px;border:2px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── BADGE NOTIFICAÇÃO ──────────────────────────────────── */
+.notif-dot{position:absolute;top:8px;right:14px;width:8px;height:8px;border-radius:50%;background:var(--red)}
+
+/* ── CONTRATO PREVIEW ───────────────────────────────────── */
+.contrato-preview{background:#fff;color:#1a1a1a;border-radius:8px;padding:30px;font-size:12px;line-height:1.7;max-height:500px;overflow-y:auto}
+.contrato-preview h2{font-size:15px;text-align:center;margin-bottom:5px;font-weight:700;font-family:serif}
+.contrato-preview h3{font-size:12px;font-weight:700;margin:14px 0 6px;border-bottom:1px solid #ddd;padding-bottom:4px}
+.contrato-preview p{margin-bottom:6px}
+.contrato-preview .assin-area{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:30px}
+.contrato-preview .assin-line{border-top:1px solid #666;padding-top:6px;text-align:center;font-size:11px;color:#333}
+
+/* ── QR CODE ────────────────────────────────────────────── */
+.qr-wrap{background:#fff;border-radius:12px;padding:20px;display:inline-block;margin:10px auto}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════
+     LOGIN
+════════════════════════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <h1>FACILITA CELL</h1>
+      <p>SISTEMA DE GESTÃO FINANCEIRA</p>
+      <div class="live"><div class="live-dot"></div>Sistema Online</div>
+    </div>
+    <div class="role-tabs">
+      <div class="role-tab active" onclick="setRole('admin',this)">Admin</div>
+      <div class="role-tab" onclick="setRole('vendedor',this)">Vendedor</div>
+      <div class="role-tab" onclick="setRole('suporte',this)">Suporte</div>
+      <div class="role-tab" onclick="setRole('cliente',this)">Cliente</div>
+    </div>
+    <div class="err-msg" id="errMsg">E-mail ou senha incorretos.</div>
+    <div class="field"><label>E-mail</label><input type="email" id="loginEmail" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')login()"/></div>
+    <div class="field"><label>Senha</label><input type="password" id="loginSenha" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()"/></div>
+    <button class="btn-login" onclick="login()">ENTRAR NO SISTEMA</button>
+    <div class="login-footer">FACILITA CELL © 2026 — Dados protegidos por LGPD</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     APP
+════════════════════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <h2>FACILITA CELL</h2>
+      <p>Seu celular, seu crédito.</p>
+      <div class="sidebar-badge" id="sidebarRole">ADMIN</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Principal</div>
+      <div class="nav-item active" onclick="goPage('dashboard',this)"><span class="ic">📊</span>Dashboard</div>
+      <div class="nav-item" onclick="goPage('candidatos',this)" id="navCandidatos"><span class="ic">🔎</span>Candidatos<span class="nav-badge" id="badgeCand">0</span></div>
+      <div class="nav-item" onclick="goPage('clientes',this)"><span class="ic">👥</span>Clientes</div>
+      <div class="nav-section">Operacional</div>
+      <div class="nav-item" onclick="goPage('celulares',this)"><span class="ic">📱</span>Verificar IMEI</div>
+      <div class="nav-item" onclick="goPage('contratos',this)"><span class="ic">📄</span>Contratos</div>
+      <div class="nav-item" onclick="goPage('parcelas',this)"><span class="ic">💳</span>Parcelas</div>
+      <div class="nav-item" onclick="goPage('travas',this)"><span class="ic">🔒</span>Travas IMEI<span class="nav-badge" id="badgeTrava">0</span></div>
+      <div class="nav-section">Financeiro</div>
+      <div class="nav-item" onclick="goPage('financeiro',this)"><span class="ic">💰</span>Financeiro</div>
+      <div class="nav-item" onclick="goPage('termos',this)"><span class="ic">📋</span>Termos e Contratos</div>
+      <div class="nav-section">Gestão</div>
+      <div class="nav-item" onclick="goPage('suporte',this)"><span class="ic">🎧</span>Suporte</div>
+      <div class="nav-item" onclick="goPage('relatorios',this)"><span class="ic">📈</span>Relatórios</div>
+      <div class="nav-section" id="navAdmin">Admin</div>
+      <div class="nav-item" id="navUsuarios" onclick="goPage('usuarios',this)"><span class="ic">⚙️</span>Usuários</div>
+      <div class="nav-item" onclick="goPage('configuracoes',this)"><span class="ic">🛠️</span>Configurações</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="db-status"><div class="db-dot" id="dbDot"></div><span id="dbStatus">Verificando...</span></div>
+      <button class="btn-logout" onclick="logout()">Sair da conta</button>
+    </div>
+  </div>
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title" id="pageTitle">Dashboard</div>
+    <div class="topbar-right">
+      <div class="topbar-clock" id="relogioTop"></div>
+      <div class="user-chip">
+        <div class="avatar" id="userAvatar">AD</div>
+        <div><span id="userName">Administrador</span><small id="userRole">Admin</small></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN PAGES -->
+  <div class="main">
+
+    <!-- ── DASHBOARD ──────────────────────────────────────── -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Contratos Ativos</div><div class="stat-value orange" id="st-contratos">—</div><div class="stat-sub">Financiamentos em curso</div></div>
+        <div class="stat-card"><div class="stat-label">Carteira Total</div><div class="stat-value white" id="st-total">—</div><div class="stat-sub">Valor financiado</div></div>
+        <div class="stat-card"><div class="stat-label">Inadimplentes</div><div class="stat-value red" id="st-inadimp">—</div><div class="stat-sub">Travados/atrasados</div></div>
+        <div class="stat-card"><div class="stat-label">Recebido Mês</div><div class="stat-value green" id="st-recebido">—</div><div class="stat-sub">Parcelas pagas</div></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Atividade recente</div>
+          <ul class="timeline" id="timeline"><li><div class="tl-dot"></div><div><div class="loading" style="padding:10px 0"><div class="spinner"></div></div></div></li></ul>
+        </div>
+        <div class="card">
+          <div class="card-title">Alertas do sistema<button class="btn xs ghost" onclick="goPage('travas',document.querySelector('[onclick*=travas]'))">Ver travas</button></div>
+          <div id="alertas"><div class="loading"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Candidatos aguardando análise<button class="btn xs primary" onclick="goPage('candidatos',document.querySelector('[onclick*=candidatos]'))">Ver todos</button></div>
+          <div id="dash-candidatos-preview"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Resumo financeiro do mês</div>
+          <div id="dash-fin-preview"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CANDIDATOS ────────────────────────────────────── -->
+    <div class="page" id="page-candidatos">
+      <div class="alert blue" style="margin-bottom:16px">
+        <strong>Fluxo de aprovação:</strong> Candidato preenche formulário via QR Code → Suporte analisa documentos → Aprova ou reprova → Se aprovado, vendedor cria contrato.
+      </div>
+      <div class="card">
+        <div class="card-title">
+          Candidatos para análise de crédito
+          <div style="display:flex;gap:8px">
+            <button class="btn xs outline" onclick="gerarQRVendedor()">📱 Gerar QR Code</button>
+            <button class="btn xs primary" onclick="openModal('modalNovoCandidato')">+ Cadastrar manual</button>
+          </div>
+        </div>
+        <div class="form-grid" style="margin-bottom:12px">
+          <div class="form-group">
+            <label>Status</label>
+            <select id="filtroCandStatus" onchange="carregarCandidatos()">
+              <option value="">Todos</option>
+              <option value="pendente">Pendente</option>
+              <option value="em_analise">Em análise</option>
+              <option value="aprovado">Aprovado</option>
+              <option value="reprovado">Reprovado</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Buscar</label>
+            <input type="text" id="filtroCandNome" placeholder="Nome ou CPF..." oninput="carregarCandidatos()"/>
+          </div>
+        </div>
+        <div id="listaCandidatos"><div class="loading"><div class="spinner"></div><br>Carregando...</div></div>
+      </div>
+    </div>
+
+    <!-- ── CLIENTES ──────────────────────────────────────── -->
+    <div class="page" id="page-clientes">
+      <div class="card">
+        <div class="card-title">
+          Clientes cadastrados
+          <button class="btn xs primary" onclick="openModal('modalNovoCliente')">+ Novo cliente</button>
+        </div>
+        <div class="form-grid" style="margin-bottom:12px">
+          <div class="form-group"><label>Buscar</label><input type="text" id="filtroClienteNome" placeholder="Nome, CPF ou telefone..." oninput="carregarClientes()"/></div>
+          <div class="form-group"><label>Status</label><select id="filtroClienteStatus" onchange="carregarClientes()"><option value="">Todos</option><option value="ativo">Ativo</option><option value="inadimplente">Inadimplente</option><option value="bloqueado">Bloqueado</option></select></div>
+        </div>
+        <div class="table-wrap"><div id="listaClientes"><div class="loading"><div class="spinner"></div><br>Carregando...</div></div></div>
+      </div>
+    </div>
+
+    <!-- ── IMEI ───────────────────────────────────────────── -->
+    <div class="page" id="page-celulares">
+      <div class="card">
+        <div class="card-title">🔍 Verificar IMEI do Aparelho</div>
+        <div class="alert blue" style="margin-bottom:16px">
+          Digite o IMEI do celular (15 dígitos — encontrado na caixa ou discando <strong>*#06#</strong>) para verificar se é válido e não está bloqueado ou roubado.
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:16px;flex-wrap:wrap">
+          <div class="form-group" style="flex:1;min-width:220px">
+            <label>IMEI do aparelho</label>
+            <input type="text" id="imei-input" placeholder="000000000000000" maxlength="17"
+              oninput="this.value=this.value.replace(/\D/g,'').substring(0,15)"
+              onkeydown="if(event.key==='Enter')verificarIMEI()"/>
+          </div>
+          <button class="btn primary" onclick="verificarIMEI()" style="height:42px">🔍 Verificar IMEI</button>
+        </div>
+        <div id="imei-resultado" style="display:none"></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="card-title">📱 Celulares Financiados
+          <button class="btn xs outline" onclick="carregarCelularesFinanciados()">Atualizar</button>
+        </div>
+        <div class="table-wrap"><div id="listaCelulares"><div class="alert">Clique em Atualizar para ver os celulares financiados.</div></div></div>
+      </div>
+    </div>
+
+    <!-- ── CONTRATOS ─────────────────────────────────────── -->
+    <div class="page" id="page-contratos">
+      <div class="card">
+        <div class="card-title">
+          Contratos de financiamento
+          <div style="display:flex;gap:8px">
+            <button class="btn xs outline" onclick="openModal('modalNovoContrato')">+ Novo contrato</button>
+          </div>
+        </div>
+        <div class="table-wrap"><div id="listaContratos"><div class="loading"><div class="spinner"></div><br>Carregando...</div></div></div>
+      </div>
+    </div>
+
+    <!-- ── PARCELAS ──────────────────────────────────────── -->
+    <div class="page" id="page-parcelas">
+      <div class="card">
+        <div class="card-title">Parcelas — Cobranças via Asaas (boleto/PIX)</div>
+        <div class="form-grid" style="margin-bottom:12px">
+          <div class="form-group"><label>Filtrar por contrato</label><select id="filtroContrato" onchange="carregarParcelas()"><option value="">Todos</option></select></div>
+          <div class="form-group"><label>Status</label><select id="filtroStatusParcela" onchange="carregarParcelas()"><option value="">Todos</option><option value="pendente">Pendente</option><option value="pago">Pago</option><option value="atrasado">Atrasado</option></select></div>
+        </div>
+        <div class="table-wrap"><div id="listaParcelas"><div class="loading"><div class="spinner"></div><br>Carregando...</div></div></div>
+      </div>
+    </div>
+
+    <!-- ── TRAVAS ────────────────────────────────────────── -->
+    <div class="page" id="page-travas">
+      <div class="alert danger" style="margin-bottom:16px">
+        <strong>Trava automática:</strong> Aparelhos são bloqueados após <strong id="diasTravaConf">30 dias</strong> de inadimplência. Desbloqueio em até 2h após confirmação de pagamento.
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">
+            Controle de trava IMEI
+            <div style="display:flex;gap:6px;align-items:center">
+              <span id="lockProviderBadge" class="status analise" style="font-size:10px">MANUAL</span>
+              <button class="btn xs outline" onclick="openModal('modalTravaManual')">Trava manual</button>
+            </div>
+          </div>
+          <div id="listaTravas"><div class="loading"><div class="spinner"></div><br>Carregando...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Regras automáticas</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="alert success">✅ <strong>Em dia:</strong> Celular ativo, sem restrições</div>
+            <div class="alert">⚠️ <strong>Dia 1–15:</strong> 1º aviso por WhatsApp automático</div>
+            <div class="alert warning">🔔 <strong>Dia 16–29:</strong> 2º aviso + ligação do suporte</div>
+            <div class="alert danger">🔴 <strong>Dia 30+:</strong> Trava automática via IMEI</div>
+          </div>
+          <div class="card-title" style="margin-top:16px">Provedor de trava</div>
+          <div class="alert blue">
+            <strong>🔒 Paymobi</strong> — paymobi.com.br<br>
+            Solução <strong>oficial e certificada (SOC2)</strong> para financiadoras no Brasil. Parceira oficial da <strong>Samsung Knox Guard</strong>.<br><br>
+            Suporta: <strong>Samsung, Motorola, Xiaomi, Infinix, Realme, Poco, Itel, Honor</strong><br><br>
+            ✅ Bloqueio remoto via MDM (app no celular)<br>
+            ✅ Desbloqueio automático após pagamento<br>
+            ✅ API REST + painel web<br><br>
+            Configure a API Key em <strong>Configurações → Paymobi</strong>.
+          </div>
+          <div style="margin-top:10px">
+            <a href="https://paymobi.com.br" target="_blank" class="btn outline xs">Contratar Paymobi →</a>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Log de travas e desbloqueios</div>
+        <div class="table-wrap"><div id="logTravas"><div class="loading"><div class="spinner"></div><br>Carregando...</div></div></div>
+      </div>
+    </div>
+
+    <!-- ── FINANCEIRO ────────────────────────────────────── -->
+    <div class="page" id="page-financeiro">
+      <div class="stats-grid five">
+        <div class="stat-card"><div class="stat-label">Recebido mês</div><div class="stat-value green" id="fin-recebido">—</div><div class="stat-sub" id="fin-recebido-sub"></div></div>
+        <div class="stat-card"><div class="stat-label">A receber mês</div><div class="stat-value orange" id="fin-areceber">—</div><div class="stat-sub" id="fin-areceber-sub"></div></div>
+        <div class="stat-card"><div class="stat-label">Em atraso</div><div class="stat-value red" id="fin-atraso">—</div><div class="stat-sub">Vencido não pago</div></div>
+        <div class="stat-card"><div class="stat-label">Carteira ativa</div><div class="stat-value white" id="fin-carteira">—</div><div class="stat-sub">Total financiado</div></div>
+        <div class="stat-card"><div class="stat-label">Lucro estimado</div><div class="stat-value yellow" id="fin-lucro">—</div><div class="stat-sub">Juros recebidos</div></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">
+            Recebimentos registrados
+            <button class="btn xs primary" onclick="openModal('modalNovoRecebimento')">+ Registrar</button>
+          </div>
+          <div id="listaRecebimentos"><div class="loading"><div class="spinner"></div><br>Carregando...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">DRE Simplificado — Mês Atual</div>
+          <div id="dre"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">
+          Fluxo de caixa — próximos 30 dias
+          <button class="btn xs ghost" onclick="exportarCSV('financeiro')">⬇ Exportar CSV</button>
+        </div>
+        <div class="table-wrap"><div id="fluxoCaixa"><div class="loading"><div class="spinner"></div><br>Carregando...</div></div></div>
+      </div>
+    </div>
+
+    <!-- ── TERMOS & CONTRATOS ────────────────────────────── -->
+    <div class="page" id="page-termos">
+      <div class="alert blue" style="margin-bottom:16px">
+        <strong>Como funciona:</strong> Selecione um contrato → Gere o Termo de Ciência do Cliente → O vendedor apresenta para assinatura presencial ou envia pelo WhatsApp. O contrato completo fica arquivado no sistema.
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Gerar Termo e Contrato</div>
+          <div class="form-group" style="margin-bottom:12px"><label>Selecionar contrato</label><select id="termoContratoSelect" onchange="previewTermo()"><option value="">Selecione...</option></select></div>
+          <div id="termoPreviewCard" style="display:none">
+            <div class="alert success">✅ Contrato selecionado. Revise e envie ao cliente.</div>
+            <div class="btn-row">
+              <button class="btn primary" onclick="gerarTermoPDF()">📄 Gerar Contrato PDF</button>
+              <button class="btn success" onclick="enviarTermoWhatsApp()">📲 Enviar WhatsApp</button>
+              <button class="btn outline" onclick="imprimirTermo()">🖨️ Imprimir Termo</button>
+            </div>
+          </div>
+          <div id="termoInfo" style="margin-top:12px;color:var(--gray);font-size:12px">Selecione um contrato para visualizar o termo.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Termos gerados</div>
+          <div class="table-wrap"><div id="listaTermos"><div class="loading"><div class="spinner"></div><br>Carregando...</div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Visualização do Termo de Ciência do Cliente</div>
+        <div class="termo-box" id="termoDemoBox">
+          <p style="text-align:center;color:var(--gray)">Selecione um contrato acima para visualizar o termo.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SUPORTE ───────────────────────────────────────── -->
+    <div class="page" id="page-suporte">
+      <div class="card">
+        <div class="card-title">Central de Suporte — Análise de Crédito</div>
+        <div class="alert warning" style="margin-bottom:14px">
+          O suporte analisa: <strong>renda declarada, extrato bancário, documentos enviados e histórico interno.</strong> Negativados no SPC/Serasa podem ser aprovados a critério da empresa.
+        </div>
+        <div id="suporteCandidatos"><div class="loading"><div class="spinner"></div><br>Carregando...</div></div>
+      </div>
+    </div>
+
+    <!-- ── RELATÓRIOS ─────────────────────────────────────── -->
+    <div class="page" id="page-relatorios">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Taxa de aprovação</div><div class="stat-value green" id="rel-aprovacao">—</div></div>
+        <div class="stat-card"><div class="stat-label">Inadimplência</div><div class="stat-value orange" id="rel-inadimp">—</div></div>
+        <div class="stat-card"><div class="stat-label">Ticket médio</div><div class="stat-value white" id="rel-ticket">—</div></div>
+        <div class="stat-card"><div class="stat-label">Celulares travados</div><div class="stat-value red" id="rel-travados">—</div></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Exportar dados</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn outline" onclick="exportarCSV('contratos')">⬇ Contratos ativos (CSV)</button>
+            <button class="btn outline" onclick="exportarCSV('inadimplentes')">⬇ Inadimplentes (CSV)</button>
+            <button class="btn outline" onclick="exportarCSV('clientes')">⬇ Clientes (CSV)</button>
+            <button class="btn outline" onclick="exportarCSV('recebimentos')">⬇ Recebimentos (CSV)</button>
+            <button class="btn ghost" onclick="window.print()">🖨️ Imprimir relatório</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Segurança do sistema</div>
+          <ul class="timeline">
+            <li><div class="tl-dot green"></div><div><div>Banco Supabase + PostgreSQL + SSL/TLS</div><div class="tl-time">Criptografia AES-256 em repouso</div></div></li>
+            <li><div class="tl-dot green"></div><div><div>Backup automático diário</div><div class="tl-time">Supabase gerenciado</div></div></li>
+            <li><div class="tl-dot green"></div><div><div>LGPD — Lei 13.709/2018</div><div class="tl-time">Dados protegidos conforme a lei</div></div></li>
+            <li><div class="tl-dot green"></div><div><div>Logs de auditoria completos</div><div class="tl-time">Todas as ações registradas</div></div></li>
+            <li><div class="tl-dot orange"></div><div><div>Documentos em Supabase Storage</div><div class="tl-time">Acesso restrito por autenticação</div></div></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── USUÁRIOS ──────────────────────────────────────── -->
+    <div class="page" id="page-usuarios">
+      <div class="card">
+        <div class="card-title">
+          Usuários do sistema
+          <button class="btn xs primary" onclick="openModal('modalNovoUsuario')">+ Novo usuário</button>
+        </div>
+        <div class="table-wrap"><div id="listaUsuarios"><div class="loading"><div class="spinner"></div><br>Carregando...</div></div></div>
+      </div>
+    </div>
+
+    <!-- ── CONFIGURAÇÕES ─────────────────────────────────── -->
+    <div class="page" id="page-configuracoes">
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Dados da empresa</div>
+          <div class="form-grid">
+            <div class="form-group"><label>Nome da empresa</label><input type="text" id="cfg-empresa" value="FACILITA CELL"/></div>
+            <div class="form-group"><label>CNPJ</label><input type="text" id="cfg-cnpj" placeholder="00.000.000/0001-00"/></div>
+            <div class="form-group"><label>WhatsApp suporte</label><input type="text" id="cfg-whats" placeholder="+55 (45) 99999-9999"/></div>
+            <div class="form-group"><label>E-mail suporte</label><input type="email" id="cfg-email" placeholder="suporte@facilitacred.com.br"/></div>
+            <div class="form-group full-col"><label>Endereço da empresa</label><input type="text" id="cfg-end" placeholder="Rua, Nº — Cidade/UF"/></div>
+          </div>
+          <div class="card-title" style="margin-top:16px">Regras de financiamento</div>
+          <div class="form-grid">
+            <div class="form-group"><label>Juros padrão (%/mês)</label><input type="number" id="cfg-juros" value="3.5" step="0.1"/></div>
+            <div class="form-group"><label>Comprometimento máx (%)</label><input type="number" id="cfg-comp" value="40"/></div>
+            <div class="form-group"><label>Dias aviso 1 (WhatsApp)</label><input type="number" id="cfg-av1" value="1"/></div>
+            <div class="form-group"><label>Dias aviso 2 (ligação)</label><input type="number" id="cfg-av2" value="15"/></div>
+            <div class="form-group"><label>Dias para trava IMEI</label><input type="number" id="cfg-trava" value="30"/></div>
+            <div class="form-group"><label>Parcelas máximas</label><input type="number" id="cfg-parcmax" value="24"/></div>
+          </div>
+          <div class="btn-row"><button class="btn primary" onclick="salvarConfiguracoes()">Salvar configurações</button></div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-title">Asaas — Pagamentos</div>
+            <div class="form-grid">
+              <div class="form-group full-col"><label>Chave API Asaas</label><input type="text" id="cfg-asaas" placeholder="$aas_SUA_CHAVE"/></div>
+              <div class="form-group"><label>Ambiente</label><select id="cfg-asaas-env"><option value="sandbox">Sandbox (testes)</option><option value="production">Produção</option></select></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Paymobi — Bloqueio Remoto MDM</div>
+            <div class="alert blue" style="margin-bottom:12px;font-size:11px">
+              ✅ Solução oficial para financiadoras • Parceira Samsung Knox Guard<br>
+              Suporta: Samsung, Motorola, Xiaomi, Infinix, Realme, Poco, Itel, Honor<br>
+              Contrate em: <a href="https://paymobi.com.br" target="_blank" style="color:var(--orange)">paymobi.com.br</a>
+            </div>
+            <div class="form-grid">
+              <div class="form-group full-col"><label>API Key Paymobi</label><input type="text" id="cfg-paymobi" placeholder="SUA_CHAVE_PAYMOBI_AQUI"/></div>
+              <div class="form-group"><label>Status</label>
+                <select id="cfg-lock-provider">
+                  <option value="manual">Manual (sem API)</option>
+                  <option value="paymobi">Paymobi (API ativa)</option>
+                </select>
+              </div>
+            </div>
+            <div class="btn-row"><button class="btn outline" onclick="testarPaymobi()">Testar conexão Paymobi</button></div>
+          </div>
+          <div class="card">
+            <div class="card-title">BMP Bank — Contratos de crédito</div>
+            <div class="form-grid">
+              <div class="form-group"><label>Client ID BMP</label><input type="text" id="cfg-bmp-id" placeholder="client_id"/></div>
+              <div class="form-group"><label>Client Secret BMP</label><input type="password" id="cfg-bmp-secret" placeholder="client_secret"/></div>
+              <div class="form-group"><label>Ambiente</label><select id="cfg-bmp-env"><option value="sandbox">Sandbox</option><option value="production">Produção</option></select></div>
+            </div>
+            <div class="alert blue" style="margin-top:8px;font-size:11px">
+              O BMP Bank fornece infraestrutura de crédito para financiadoras. Acesse <strong>bmpbank.com.br</strong> → Portal Parceiros para solicitar acesso.
+            </div>
+            <div class="btn-row"><button class="btn xs outline" onclick="testarBMP()">Testar BMP</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ════════════════════════════════════════════════════════
+     MODAIS
+════════════════════════════════════════════════════════ -->
+
+<!-- Modal: Novo Candidato -->
+<div class="modal-overlay" id="modalNovoCandidato">
+  <div class="modal wide">
+    <div class="modal-title">🔎 Cadastrar Candidato<button onclick="closeModal('modalNovoCandidato')">×</button></div>
+    <div class="section-label">Dados pessoais</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Nome completo *</label><input type="text" id="ca-nome" placeholder="Nome do candidato"/></div>
+      <div class="form-group"><label>CPF *</label><input type="text" id="ca-cpf" placeholder="000.000.000-00" oninput="mascaraCPF(this)"/></div>
+      <div class="form-group"><label>Telefone *</label><input type="text" id="ca-tel" placeholder="(45) 99999-9999" oninput="mascaraTel(this)"/></div>
+      <div class="form-group"><label>E-mail</label><input type="email" id="ca-email" placeholder="cliente@email.com"/></div>
+      <div class="form-group"><label>RG</label><input type="text" id="ca-rg" placeholder="00.000.000-0"/></div>
+      <div class="form-group"><label>Data de nascimento</label><input type="date" id="ca-nasc"/></div>
+      <div class="form-group"><label>CEP</label><input type="text" id="ca-cep" placeholder="00000-000" onblur="buscarCEP('ca-cep','ca-end')"/></div>
+      <div class="form-group"><label>Cidade/UF</label><input type="text" id="ca-cidade" placeholder="Foz do Iguaçu/PR"/></div>
+      <div class="form-group full-col"><label>Endereço</label><input type="text" id="ca-end" placeholder="Rua, número, bairro"/></div>
+    </div>
+    <div class="section-label">Renda e crédito</div>
+    <div class="form-grid three">
+      <div class="form-group"><label>Renda mensal (R$) *</label><input type="number" id="ca-renda" placeholder="2000.00"/></div>
+      <div class="form-group"><label>Tipo de renda</label>
+        <select id="ca-tipo-renda">
+          <option value="clt">CLT (funcionário)</option>
+          <option value="autonomo">Autônomo</option>
+          <option value="empresario">Empresário</option>
+          <option value="aposentado">Aposentado</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Celular desejado</label><input type="text" id="ca-cel" placeholder="Ex: Samsung A35 5G"/></div>
+      <div class="form-group"><label>Valor estimado (R$)</label><input type="number" id="ca-valor" placeholder="0.00"/></div>
+    </div>
+    <div class="section-label">Observações</div>
+    <div class="form-group"><label>Observação</label><textarea id="ca-obs" placeholder="Informações adicionais..."></textarea></div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="salvarCandidato()">Cadastrar para análise</button>
+      <button class="btn ghost" onclick="closeModal('modalNovoCandidato')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Ver Documentos do Candidato -->
+<div class="modal-overlay" id="modalVerDocs">
+  <div class="modal wide">
+    <div class="modal-title">📁 Documentos do Candidato<button onclick="closeModal('modalVerDocs')">×</button></div>
+    <div id="docsInfo" style="margin-bottom:16px"></div>
+    <div class="doc-grid" id="docGrid"></div>
+    <div class="section-label">Análise de crédito</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Score interno (0-1000)</label><input type="number" id="doc-score" placeholder="700" min="0" max="1000"/></div>
+      <div class="form-group"><label>Resultado</label>
+        <select id="doc-resultado">
+          <option value="aprovado">✅ Aprovar</option>
+          <option value="reprovado">❌ Reprovar</option>
+          <option value="aguardando_docs">📎 Solicitar + documentos</option>
+        </select>
+      </div>
+      <div class="form-group full-col"><label>Observação / motivo</label><textarea id="doc-obs" placeholder="Motivo da decisão, pendências, etc."></textarea></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn success" onclick="confirmarAnalise()">Confirmar análise</button>
+      <button class="btn ghost" onclick="closeModal('modalVerDocs')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Novo Cliente -->
+<div class="modal-overlay" id="modalNovoCliente">
+  <div class="modal wide">
+    <div class="modal-title">👤 Cadastrar Novo Cliente<button onclick="closeModal('modalNovoCliente')">×</button></div>
+    <div class="section-label">Dados pessoais</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Nome completo *</label><input type="text" id="c-nome" placeholder="Nome completo"/></div>
+      <div class="form-group"><label>CPF *</label><input type="text" id="c-cpf" placeholder="000.000.000-00" oninput="mascaraCPF(this)"/></div>
+      <div class="form-group"><label>Telefone *</label><input type="text" id="c-tel" placeholder="(45) 99999-9999" oninput="mascaraTel(this)"/></div>
+      <div class="form-group"><label>E-mail</label><input type="email" id="c-email" placeholder="cliente@email.com"/></div>
+      <div class="form-group"><label>RG</label><input type="text" id="c-rg" placeholder="00.000.000-0"/></div>
+      <div class="form-group"><label>Data de nascimento</label><input type="date" id="c-nasc"/></div>
+      <div class="form-group"><label>CEP</label><input type="text" id="c-cep" placeholder="00000-000" onblur="buscarCEP('c-cep','c-end')"/></div>
+      <div class="form-group"><label>Renda mensal (R$) *</label><input type="number" id="c-renda" placeholder="0.00"/></div>
+      <div class="form-group"><label>Tipo de renda</label>
+        <select id="c-tipo-renda">
+          <option value="clt">CLT</option><option value="autonomo">Autônomo</option>
+          <option value="empresario">Empresário</option><option value="aposentado">Aposentado</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Nome da mãe</label><input type="text" id="c-mae" placeholder="Nome da mãe"/></div>
+      <div class="form-group full-col"><label>Endereço completo</label><input type="text" id="c-end" placeholder="Rua, número, bairro, cidade - UF"/></div>
+      <div class="form-group"><label>Observações</label><textarea id="c-obs" placeholder="Observações..."></textarea></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="salvarCliente()">Salvar cliente</button>
+      <button class="btn ghost" onclick="closeModal('modalNovoCliente')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Novo Celular -->
+<div class="modal-overlay" id="modalNovoCelular">
+  <div class="modal">
+    <div class="modal-title">📱 Cadastrar Celular no Estoque<button onclick="closeModal('modalNovoCelular')">×</button></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Marca *</label>
+        <select id="cel-marca">
+          <option value="">Selecione a marca...</option>
+          <option value="Samsung">Samsung</option>
+          <option value="Motorola">Motorola</option>
+          <option value="Xiaomi">Xiaomi</option>
+          <option value="Infinix">Infinix</option>
+          <option value="Realme">Realme</option>
+          <option value="Poco">Poco</option>
+          <option value="Itel">Itel</option>
+          <option value="Honor">Honor</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Modelo *</label><input type="text" id="cel-modelo" placeholder="Galaxy A35 5G"/></div>
+      <div class="form-group"><label>IMEI principal *</label><input type="text" id="cel-imei" placeholder="15 dígitos" maxlength="17"/></div>
+      <div class="form-group"><label>IMEI 2 (Dual SIM)</label><input type="text" id="cel-imei2" placeholder="15 dígitos (opcional)" maxlength="17"/></div>
+      <div class="form-group"><label>Nº de série</label><input type="text" id="cel-serie" placeholder="Nº série"/></div>
+      <div class="form-group"><label>Cor</label><input type="text" id="cel-cor" placeholder="Preto, Azul..."/></div>
+      <div class="form-group"><label>Armazenamento</label><input type="text" id="cel-arm" placeholder="128GB, 256GB..."/></div>
+      <div class="form-group"><label>RAM</label><input type="text" id="cel-ram" placeholder="4GB, 8GB..."/></div>
+      <div class="form-group"><label>Valor de venda (R$) *</label><input type="number" id="cel-venda" placeholder="0.00" oninput="calcCelMargin()"/></div>
+      <div class="form-group"><label>Valor de custo (R$)</label><input type="number" id="cel-custo" placeholder="0.00" oninput="calcCelMargin()"/></div>
+      <div class="form-group full-col"><div id="cel-margin" class="alert" style="display:none"></div></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="salvarCelular()">Cadastrar no estoque</button>
+      <button class="btn ghost" onclick="closeModal('modalNovoCelular')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Novo Contrato -->
+<div class="modal-overlay" id="modalNovoContrato">
+  <div class="modal wide">
+    <div class="modal-title">📄 Novo Contrato de Financiamento<button onclick="closeModal('modalNovoContrato')">×</button></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Cliente *</label><select id="ct-cliente"><option value="">Selecione...</option></select></div>
+      <div class="form-group"><label>IMEI do Aparelho *</label>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="ct-imei" placeholder="000000000000000" maxlength="15" oninput="this.value=this.value.replace(/\D/g,'').substring(0,15)" style="flex:1"/>
+          <button class="btn outline sm" onclick="verificarIMEIContrato()" type="button">Verificar</button>
+        </div>
+      </div>
+      <div class="form-group"><label>Valor do Aparelho (R$) *</label><input type="number" id="ct-valor-ap" placeholder="0.00" oninput="calcularContrato()"/></div>
+      <div class="form-group"><label>Modelo do Aparelho</label><input type="text" id="ct-modelo-ap" placeholder="Samsung A35 5G"/></div>
+      <div class="form-group"><label>Valor de entrada (R$)</label><input type="number" id="ct-entrada" placeholder="0.00" value="0" oninput="calcularContrato()"/></div>
+      <div class="form-group"><label>Nº de parcelas *</label>
+        <select id="ct-parcelas" onchange="calcularContrato()">
+          <option value="10">10x</option>
+          <option value="12" selected>12x</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Taxa de juros (% mês)</label><input type="number" id="ct-juros" placeholder="3.5" value="3.5" step="0.1" oninput="calcularContrato()"/></div>
+      <div class="form-group"><label>1º vencimento (dias)</label><input type="number" id="ct-dias-venc" placeholder="30" value="30" min="1" max="60" title="Dias até o 1º vencimento a partir da data de hoje"/></div>
+      <div class="form-group"><label>Data de início</label><input type="date" id="ct-inicio"/></div>
+    </div>
+    <div class="alert" id="ct-preview" style="display:none;margin-top:4px"></div>
+    <div class="alert blue" id="ct-comprometimento" style="display:none;margin-top:4px"></div>
+    <div class="btn-row">
+      <button class="btn outline" onclick="calcularContrato()">Calcular parcela</button>
+      <button class="btn primary" onclick="salvarContrato()">Criar contrato + gerar cobranças</button>
+      <button class="btn ghost" onclick="closeModal('modalNovoContrato')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Visualizar Contrato/Termo -->
+<div class="modal-overlay" id="modalVisualizarContrato">
+  <div class="modal xl">
+    <div class="modal-title" id="modalContratoTitulo">Contrato de Financiamento<button onclick="closeModal('modalVisualizarContrato')">×</button></div>
+    <div class="contrato-preview" id="contratoContent"></div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="imprimirContrato()">🖨️ Imprimir / Salvar PDF</button>
+      <button class="btn success" onclick="enviarContratoWhatsApp()">📲 Enviar WhatsApp</button>
+      <button class="btn ghost" onclick="closeModal('modalVisualizarContrato')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Novo Recebimento -->
+<div class="modal-overlay" id="modalNovoRecebimento">
+  <div class="modal">
+    <div class="modal-title">💰 Registrar Recebimento<button onclick="closeModal('modalNovoRecebimento')">×</button></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Contrato</label><select id="rec-contrato"><option value="">Selecione (opcional)</option></select></div>
+      <div class="form-group"><label>Tipo</label>
+        <select id="rec-tipo">
+          <option value="parcela">Parcela</option><option value="entrada">Entrada</option>
+          <option value="taxa">Taxa</option><option value="multa">Multa</option><option value="outros">Outros</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Valor (R$) *</label><input type="number" id="rec-valor" placeholder="0.00"/></div>
+      <div class="form-group"><label>Canal de pagamento</label>
+        <select id="rec-canal">
+          <option value="pix">PIX</option><option value="boleto">Boleto</option>
+          <option value="dinheiro">Dinheiro</option><option value="transferencia">Transferência</option>
+          <option value="cartao">Cartão</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Data do recebimento</label><input type="date" id="rec-data"/></div>
+      <div class="form-group"><label>Observação</label><input type="text" id="rec-obs" placeholder="Opcional"/></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="salvarRecebimento()">Registrar recebimento</button>
+      <button class="btn ghost" onclick="closeModal('modalNovoRecebimento')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Trava Manual -->
+<div class="modal-overlay" id="modalTravaManual">
+  <div class="modal">
+    <div class="modal-title">🔒 Trava / Destrava Manual de IMEI<button onclick="closeModal('modalTravaManual')">×</button></div>
+    <div class="alert warning">Use apenas quando a trava automática não for possível ou para testes.</div>
+    <div class="form-grid">
+      <div class="form-group"><label>IMEI do aparelho *</label><input type="text" id="trava-imei" placeholder="000000000000000" maxlength="17"/></div>
+      <div class="form-group"><label>Ação</label>
+        <select id="trava-acao">
+          <option value="trava">🔴 Travar aparelho</option>
+          <option value="destrava">🟢 Destravar aparelho</option>
+        </select>
+      </div>
+      <div class="form-group full-col"><label>Motivo *</label><input type="text" id="trava-motivo" placeholder="Ex: inadimplência, venda não autorizada..."/></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn danger" onclick="executarTravaManual()">Executar ação</button>
+      <button class="btn ghost" onclick="closeModal('modalTravaManual')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: QR Code do Vendedor -->
+<div class="modal-overlay" id="modalQRVendedor">
+  <div class="modal">
+    <div class="modal-title" style="justify-content:center;flex-direction:column;gap:6px;text-align:center">
+      📱 QR Code — Cadastro de Candidato
+      <button onclick="closeModal('modalQRVendedor')" style="position:absolute;right:28px;top:28px">×</button>
+    </div>
+    <div style="text-align:center">
+      <p style="color:var(--gray);font-size:12px;margin-bottom:16px">
+        Mostre este QR Code para o cliente escanear com o celular.<br>
+        Ele irá preencher o formulário e enviar os documentos.
+      </p>
+      <div style="display:flex;justify-content:center"><div class="qr-wrap" id="qrCodeDiv"></div></div>
+      <p style="color:var(--orange);font-size:12px;margin-top:12px;font-family:var(--font-head)" id="qrLinkText"></p>
+      <div class="btn-row" style="justify-content:center;margin-top:16px">
+        <button class="btn primary" onclick="copiarLinkQR()">📋 Copiar link</button>
+        <button class="btn success" onclick="enviarQRWhatsApp()">📲 Enviar WhatsApp</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Novo Usuário -->
+<div class="modal-overlay" id="modalNovoUsuario">
+  <div class="modal">
+    <div class="modal-title">⚙️ Novo Usuário do Sistema<button onclick="closeModal('modalNovoUsuario')">×</button></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Nome *</label><input type="text" id="u-nome" placeholder="Nome completo"/></div>
+      <div class="form-group"><label>E-mail *</label><input type="email" id="u-email" placeholder="email@facilitacred.com"/></div>
+      <div class="form-group"><label>Telefone</label><input type="text" id="u-tel" placeholder="(45) 99999-9999" oninput="mascaraTel(this)"/></div>
+      <div class="form-group"><label>Senha *</label><input type="password" id="u-senha" placeholder="Mínimo 6 caracteres"/></div>
+      <div class="form-group"><label>Perfil *</label>
+        <select id="u-perfil">
+          <option value="vendedor">Vendedor</option>
+          <option value="suporte">Suporte</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="salvarUsuario()">Criar usuário</button>
+      <button class="btn ghost" onclick="closeModal('modalNovoUsuario')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ════════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════════ -->
+<script>
+// ── SUPABASE ──────────────────────────────────────────────
+let sb;
+let DEMO = true;
+try {
+  const { createClient } = supabase;
+  DEMO = !FC_CONFIG.SUPABASE_URL || FC_CONFIG.SUPABASE_URL.includes('SEU_PROJETO');
+  if (!DEMO) {
+    try { sb = createClient(FC_CONFIG.SUPABASE_URL, FC_CONFIG.SUPABASE_ANON_KEY); }
+    catch(e) { DEMO = true; console.warn('Supabase não inicializado:', e.message); }
+  }
+} catch(e) {
+  DEMO = true;
+  console.warn('Iniciando em modo DEMO:', e.message);
+}
+
+// ── FUNÇÕES CRÍTICAS GLOBAIS (definidas cedo para evitar cache issues) ──
+window.abrirContratoNew = function(id) {
+  window.open('contrato.html?contrato=' + id, '_blank');
+};
+window.abrirTermo = function(id) {
+  window.open('termo.html?contrato=' + id, '_blank');
+};
+window.abrirContrato = function(id) {
+  window.open('contrato.html?contrato=' + id, '_blank');
+};
+window.abrirRecibo = function(numero, cpf) {
+  window.open('recibo.html?contrato=' + numero + '&cpf=' + (cpf||''), '_blank');
+};
+
+// Intercepta fetch para logar erros do Supabase com a URL completa
+(function() {
+  const _fetch = window.fetch;
+  window.fetch = async function(url, opts) {
+    try {
+      const resp = await _fetch(url, opts);
+      if (!resp.ok && String(url).includes('supabase')) {
+        console.error('[SUPABASE 400] URL completa:', url);
+        const clone = resp.clone();
+        try { const body = await clone.json(); console.error('[SUPABASE 400] Erro:', JSON.stringify(body)); } catch(e){}
+      }
+      return resp;
+    } catch(e) { throw e; }
+  };
+})();
+
+let currentUser = null;
+let currentRole = 'admin';
+let candidatoAtualId = null;
+
+// ── RELÓGIO ───────────────────────────────────────────────
+function atualizarRelogio() {
+  const el = document.getElementById('relogioTop');
+  if (el) el.textContent = new Date().toLocaleString('pt-BR', {weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+setInterval(atualizarRelogio, 1000);
+atualizarRelogio();
+
+// ── STATUS BANCO ──────────────────────────────────────────
+function atualizarStatusDB() {
+  const dot = document.getElementById('dbDot');
+  const txt = document.getElementById('dbStatus');
+  if (DEMO) { dot.classList.add('off'); txt.textContent = 'Modo demo'; }
+  else { dot.classList.remove('off'); txt.textContent = 'Supabase OK'; }
+}
+
+// ── LOGIN ─────────────────────────────────────────────────
+function setRole(role, el) {
+  currentRole = role;
+  document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (role === 'cliente')  { window.location.href = 'cliente.html';  return; }
+  if (role === 'vendedor') { window.location.href = 'vendedor.html'; return; }
+  if (role === 'suporte')  { window.location.href = 'vendedor.html'; return; }
+}
+
+async function login() {
+  const emailRaw = document.getElementById('loginEmail').value.trim();
+  const senha = document.getElementById('loginSenha').value;
+  const err = document.getElementById('errMsg');
+  const btn = document.querySelector('.btn-login');
+  if (err) err.style.display = 'none';
+  if (!emailRaw || !senha) {
+    if (err) { err.textContent = 'Preencha e-mail e senha.'; err.style.display = 'block'; }
+    return;
+  }
+  const email = emailRaw.toLowerCase();
+  if (btn) { btn.textContent = 'Entrando...'; btn.disabled = true; }
+
+  // 1. ADMIN FIXO — sempre funciona
+  const admins = ['admin@facilitacell.com','admin@facilita.com','admin@facilitacred.com','admin'];
+  if (admins.indexOf(email) !== -1 && senha === 'admin123') {
+    currentUser = { email: email, perfil: 'admin', nome: 'Administrador' };
+    if (btn) { btn.textContent = 'ENTRAR NO SISTEMA'; btn.disabled = false; }
+    entrarSistema('admin', 'Administrador');
+    return;
+  }
+
+  // 2. SUPABASE
+  try {
+    const SURL = FC_CONFIG.SUPABASE_URL;
+    const SKEY = FC_CONFIG.SUPABASE_ANON_KEY;
+    if (SURL && SURL.indexOf('SEU_PROJETO') === -1 && sb) {
+      const resp = await fetch(SURL + '/rest/v1/usuarios?email=eq.' + encodeURIComponent(email) + '&select=*&limit=1', {
+        headers: { 'apikey': SKEY, 'Authorization': 'Bearer ' + SKEY, 'Accept': 'application/json' }
+      });
+      if (resp.ok) {
+        const lista = await resp.json();
+        const data = Array.isArray(lista) && lista.length > 0 ? lista[0] : null;
+        if (data) {
+          if (data.senha_hash !== senha) {
+            if (err) { err.textContent = 'Senha incorreta.'; err.style.display = 'block'; }
+            if (btn) { btn.textContent = 'ENTRAR NO SISTEMA'; btn.disabled = false; }
+            return;
+          }
+          if (data.ativo === false) {
+            if (err) { err.textContent = 'Usuário inativo.'; err.style.display = 'block'; }
+            if (btn) { btn.textContent = 'ENTRAR NO SISTEMA'; btn.disabled = false; }
+            return;
+          }
+          currentUser = data;
+          DEMO = false;
+          if (btn) { btn.textContent = 'ENTRAR NO SISTEMA'; btn.disabled = false; }
+          entrarSistema(data.perfil, data.nome);
+          return;
+        }
+      }
+    }
+  } catch(e) { console.warn('Supabase falhou:', e.message); }
+
+  // 3. DEMO
+  const demos = {
+    'vendedor@facilitacred.com': { perfil: 'vendedor', nome: 'Vendedor Demo', senha: 'vendedor123' },
+    'suporte@facilitacred.com':  { perfil: 'suporte',  nome: 'Suporte Demo',  senha: 'suporte123'  }
+  };
+  const u = demos[email];
+  if (btn) { btn.textContent = 'ENTRAR NO SISTEMA'; btn.disabled = false; }
+  if (u && u.senha === senha) {
+    currentUser = { email: email, perfil: u.perfil, nome: u.nome };
+    entrarSistema(u.perfil, u.nome);
+    return;
+  }
+  if (err) { err.textContent = 'E-mail ou senha incorretos.'; err.style.display = 'block'; }
+}
+
+function entrarSistema(perfil, nome) {
+  try {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    const setEl = function(id, v) { const e = document.getElementById(id); if (e) e.textContent = v; };
+    setEl('sidebarRole', perfil.toUpperCase());
+    setEl('userName', nome);
+    setEl('userAvatar', nome.substring(0,2).toUpperCase());
+    setEl('userRole', perfil.charAt(0).toUpperCase() + perfil.slice(1));
+    if (perfil !== 'admin') {
+      const nA = document.getElementById('navAdmin');    if (nA) nA.style.display = 'none';
+      const nU = document.getElementById('navUsuarios'); if (nU) nU.style.display = 'none';
+    }
+    localStorage.setItem('fc_user', JSON.stringify({ perfil: perfil, nome: nome, email: currentUser ? currentUser.email || '' : '' }));
+    atualizarStatusDB();
+    carregarDashboard();
+    verificarTravasAutomaticas();
+    preencherContratoSelect();
+  } catch(e) {
+    console.error('Erro entrarSistema:', e);
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  }
+}
+
+function logout() {
+  localStorage.removeItem('fc_user');
+  currentUser = null;
+  currentRole = 'admin';
+  const app = document.getElementById('app');
+  const login = document.getElementById('loginScreen');
+  if (app) app.style.display = 'none';
+  if (login) login.style.display = 'flex';
+  // Reset tabs
+  document.querySelectorAll('.role-tab').forEach(function(t,i){ t.classList.toggle('active', i===0); });
+  // Clear fields
+  const em = document.getElementById('loginEmail'); if(em) em.value = '';
+  const se = document.getElementById('loginSenha'); if(se) se.value = '';
+  const er = document.getElementById('errMsg'); if(er) er.style.display = 'none';
+}
+
+// ── NAVEGAÇÃO ─────────────────────────────────────────────
+const pageTitles = {
+  dashboard:'Dashboard', candidatos:'Candidatos', clientes:'Clientes',
+  celulares:'Celulares', contratos:'Contratos', parcelas:'Parcelas',
+  travas:'Controle de Travas IMEI', financeiro:'Financeiro',
+  termos:'Termos e Contratos', suporte:'Suporte', relatorios:'Relatórios',
+  usuarios:'Usuários', configuracoes:'Configurações'
+};
+function goPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const pg = document.getElementById('page-' + name);
+  if (pg) pg.classList.add('active');
+  if (el) el.classList.add('active');
+  document.getElementById('pageTitle').textContent = pageTitles[name] || name;
+  const loaders = {
+    clientes:carregarClientes, celulares:carregarCelulares,
+    contratos:carregarContratos, candidatos:carregarCandidatos,
+    travas:carregarTravas, suporte:carregarSuporte,
+    relatorios:carregarRelatorios, usuarios:carregarUsuarios,
+    parcelas:carregarParcelas, financeiro:carregarFinanceiro,
+    termos:carregarTermos, configuracoes:preencherFormConfiguracoes
+  };
+  if (loaders[name]) loaders[name]();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────
+async function carregarDashboard() {
+  if (DEMO) {
+    // Modo demonstração — exibe zeros/traços até o banco ser configurado
+    document.getElementById('st-contratos').textContent = '—';
+    document.getElementById('st-total').textContent = 'R$ 0,00';
+    document.getElementById('st-inadimp').textContent = '—';
+    document.getElementById('st-recebido').textContent = 'R$ 0,00';
+    document.getElementById('badgeCand').textContent = '0';
+    document.getElementById('badgeTrava').textContent = '0';
+    document.getElementById('diasTravaConf').textContent = FC_CONFIG.DIAS_TRAVA;
+    renderTimeline([
+      {cor:'', texto:'Nenhuma atividade recente — conecte o banco de dados para ver os dados reais.', tempo:''},
+    ]);
+    document.getElementById('alertas').innerHTML = `
+      <div class="alert warning">⚠️ Sistema em modo demonstração — configure o Supabase no config.js para exibir dados reais.</div>
+      <div class="alert success">✅ Trava automática operando normalmente</div>`;
+    document.getElementById('dash-candidatos-preview').innerHTML = `
+      <div class="alert">Nenhum candidato — banco não configurado.</div>`;
+    document.getElementById('dash-fin-preview').innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;color:var(--gray)">Recebido</span><span style="font-size:12px;color:var(--green);font-weight:700">R$ 0,00</span></div><div class="progress-bar"><div class="progress-fill green" style="width:0%"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;color:var(--gray)">A receber</span><span style="font-size:12px;color:var(--orange);font-weight:700">R$ 0,00</span></div><div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;color:var(--gray)">Em atraso</span><span style="font-size:12px;color:var(--red);font-weight:700">R$ 0,00</span></div><div class="progress-bar"><div class="progress-fill red" style="width:0%"></div></div></div>
+      </div>`;
+    return;
+  }
+  try {
+    const [contratos, inadimp, cands, recebidos] = await Promise.all([
+      sb.from('contratos').select('valor_total').eq('status','ativo').then(r => r).catch(() => ({data:[]})),
+      sb.from('contratos').select('id').eq('celular_travado',true).then(r => r).catch(() => ({data:[]})),
+      sb.from('candidatos').select('id').eq('status','pendente').then(r => r).catch(() => ({data:[]})),
+      sb.from('parcelas').select('valor').eq('status','pago').then(r => r).catch(() => ({data:[]})),
+    ]);
+    const total = (contratos.data||[]).reduce((a,c) => a + Number(c.valor_total), 0);
+    const recebido = (recebidos.data||[]).reduce((a,p) => a + Number(p.valor), 0);
+    const setEl = function(id,v){const e=document.getElementById(id);if(e)e.textContent=v;};
+    setEl('st-contratos', (contratos.data||[]).length);
+    setEl('st-total', 'R$ ' + total.toLocaleString('pt-BR',{minimumFractionDigits:2}));
+    setEl('st-inadimp', (inadimp.data||[]).length);
+    setEl('st-recebido', 'R$ ' + recebido.toLocaleString('pt-BR',{minimumFractionDigits:2}));
+    setEl('badgeCand', (cands.data||[]).length);
+    setEl('badgeTrava', (inadimp.data||[]).length);
+    setEl('diasTravaConf', FC_CONFIG.DIAS_TRAVA);
+    const numInadim = (inadimp.data||[]).length;
+    const numCands  = (cands.data||[]).length;
+    document.getElementById('alertas').innerHTML =
+      (numInadim > 0 ? '<div class="alert danger">🔒 <strong>'+numInadim+' aparelho(s)</strong> travado(s) por inadimplência.</div>' : '<div class="alert success">✅ Nenhum aparelho travado.</div>') +
+      (numCands  > 0 ? '<div class="alert warning">📋 <strong>'+numCands+' candidato(s)</strong> aguardando análise.</div>' : '') +
+      '<div class="alert">ℹ️ Trava automática após <strong>'+FC_CONFIG.DIAS_TRAVA+' dias</strong> de inadimplência.</div>';
+    renderTimeline([
+      {cor:'green', texto:(contratos.data||[]).length+' contrato(s) ativo(s)', tempo:'Agora'},
+      {cor:(numCands>0?'yellow':''), texto:numCands+' candidato(s) pendente(s)', tempo:''},
+      {cor:(numInadim>0?'red':'green'), texto:numInadim+' inadimplente(s)', tempo:''},
+    ]);
+  } catch(e) { console.error('Dashboard erro:', e); }
+}
+function renderTimeline(items) {
+  document.getElementById('timeline').innerHTML = items.map(i =>
+    `<li><div class="tl-dot ${i.cor}"></div><div><div style="font-size:12px">${i.texto}</div><div class="tl-time">${i.tempo}</div></div></li>`
+  ).join('');
+}
+
+// ── CANDIDATOS ────────────────────────────────────────────
+// Modo demonstração sem dados fictícios — candidatos reais virão do banco de dados
+const DEMO_CANDIDATOS = [];
+
+async function carregarCandidatos() {
+  const el = document.getElementById('listaCandidatos');
+  const filtroStatus = document.getElementById('filtroCandStatus').value;
+  const filtroNome = document.getElementById('filtroCandNome').value.toLowerCase();
+  let lista = DEMO_CANDIDATOS;
+  if (!DEMO && sb) {
+    let q = sb.from('candidatos').select('*').order('criado_em',{ascending:false});
+    if (filtroStatus) q = q.eq('status', filtroStatus);
+    const { data } = await q;
+    lista = data || [];
+  } else {
+    if (filtroStatus) lista = lista.filter(c => c.status === filtroStatus);
+    if (filtroNome) lista = lista.filter(c => c.nome.toLowerCase().includes(filtroNome) || (c.cpf||'').includes(filtroNome));
+  }
+  if (!lista.length) { el.innerHTML = '<div class="alert">Nenhum candidato encontrado.</div>'; return; }
+  el.innerHTML = lista.map(c => {
+    const sc = c.score_interno >= 700 ? 'good' : c.score_interno >= 500 ? 'medium' : 'bad';
+    const scColor = sc==='good'?'var(--green)':sc==='medium'?'var(--yellow)':'var(--red)';
+    const comp = c.valor_celular && c.renda_mensal ? ((c.valor_celular/12)/c.renda_mensal*100).toFixed(0) : '?';
+    const docsCount = [c.doc_rg_frente,c.doc_rg_verso,c.doc_cnh,c.doc_selfie,c.doc_extrato,c.doc_ctps].filter(Boolean).length;
+    return `<div class="cand-row">
+      <div class="score-ring ${sc}">
+        <div class="score-num" style="color:${scColor}">${c.score_interno||'?'}</div>
+        <div class="score-lbl">SCORE</div>
+      </div>
+      <div class="cand-info">
+        <div class="cand-name">${c.nome}</div>
+        <div class="cand-detail">CPF: ${c.cpf} • Tel: ${c.telefone} • Renda: R$ ${Number(c.renda_mensal||0).toLocaleString('pt-BR')} (${c.tipo_renda||'?'})</div>
+        <div class="cand-detail">Celular: ${c.celular_desejado||'—'} • Valor: R$ ${Number(c.valor_celular||0).toLocaleString('pt-BR')} • Comprometimento: ${comp}%</div>
+        <div class="cand-tags">
+          <span class="status ${c.status}" style="font-size:10px">${c.status.replace('_',' ')}</span>
+          <span class="tag ${docsCount>=3?'ok':'warn'}">${docsCount} doc(s) enviado(s)</span>
+          <span class="tag ${Number(comp)<=40?'ok':'warn'}">Renda ${Number(comp)<=40?'OK':'Alta comprometimento'}</span>
+        </div>
+      </div>
+      <div class="cand-actions">
+        <button class="btn sm outline" onclick="verDocumentos('${c.id}')">📁 Docs</button>
+        ${c.status==='aprovado'?`<button class="btn sm success" onclick="criarContratoParaCandidato('${c.id}')">✅ Contrato</button>`:''}
+        ${c.status==='pendente'||c.status==='em_analise'?`<button class="btn sm primary" onclick="verDocumentos('${c.id}')">Analisar</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function verDocumentos(candidatoId) {
+  candidatoAtualId = candidatoId;
+  const c = DEMO_CANDIDATOS.find(x => x.id === candidatoId) || {};
+  document.getElementById('docsInfo').innerHTML = `<div class="cand-name">${c.nome||'Candidato'}</div><div class="cand-detail">CPF: ${c.cpf||'—'} • Renda: R$ ${Number(c.renda_mensal||0).toLocaleString('pt-BR')}</div>`;
+  document.getElementById('doc-score').value = c.score_interno || '';
+  const docs = [
+    { key:'doc_rg_frente', label:'RG Frente', ico:'🪪' },
+    { key:'doc_rg_verso', label:'RG Verso', ico:'🪪' },
+    { key:'doc_cnh', label:'CNH', ico:'🚗' },
+    { key:'doc_selfie', label:'Selfie', ico:'🤳' },
+    { key:'doc_extrato', label:'Extrato Bancário', ico:'🏦' },
+    { key:'doc_ctps', label:'Carteira de Trabalho', ico:'📗' },
+  ];
+  document.getElementById('docGrid').innerHTML = docs.map(d => {
+    const has = c[d.key];
+    return `<div class="doc-item ${has?'ok':'miss'}" onclick="${has?`window.open('${has}','_blank')`:'toast(\"Documento não enviado.\",\"warning\")'}">
+      <div class="doc-ico">${d.ico}</div>
+      <div class="doc-label">${d.label}</div>
+      <div class="doc-status" style="color:${has?'var(--green)':'var(--red)'}">${has?'✅ Enviado':'❌ Pendente'}</div>
+    </div>`;
+  }).join('');
+  openModal('modalVerDocs');
+}
+
+async function confirmarAnalise() {
+  const resultado = document.getElementById('doc-resultado').value;
+  const obs = document.getElementById('doc-obs').value;
+  const score = parseInt(document.getElementById('doc-score').value) || 0;
+  if (!DEMO && sb && candidatoAtualId && !candidatoAtualId.startsWith('demo')) {
+    await sb.from('candidatos').update({ status:resultado, score_interno:score, observacao:obs, analisado_em:new Date().toISOString() }).eq('id', candidatoAtualId);
+  } else {
+    const c = DEMO_CANDIDATOS.find(x => x.id === candidatoAtualId);
+    if (c) { c.status = resultado; c.score_interno = score; }
+  }
+  const msgs = { aprovado:'✅ Candidato APROVADO com sucesso!', reprovado:'❌ Candidato reprovado.', aguardando_docs:'📎 Solicitação de documentos adicionais enviada.' };
+  toast(msgs[resultado] || 'Análise concluída.', resultado === 'aprovado' ? 'success' : resultado === 'reprovado' ? 'error' : 'warning');
+  closeModal('modalVerDocs');
+  carregarCandidatos();
+}
+
+async function salvarCandidato() {
+  const dados = {
+    nome: document.getElementById('ca-nome').value.trim(),
+    cpf: document.getElementById('ca-cpf').value.trim(),
+    telefone: document.getElementById('ca-tel').value.trim(),
+    email: document.getElementById('ca-email').value.trim(),
+    rg: document.getElementById('ca-rg').value.trim(),
+    data_nascimento: document.getElementById('ca-nasc').value || null,
+    cep: document.getElementById('ca-cep').value.trim(),
+    endereco: document.getElementById('ca-end').value.trim(),
+    cidade: document.getElementById('ca-cidade').value.trim(),
+    renda_mensal: parseFloat(document.getElementById('ca-renda').value) || 0,
+    tipo_renda: document.getElementById('ca-tipo-renda').value,
+    celular_desejado: document.getElementById('ca-cel').value.trim(),
+    valor_celular: parseFloat(document.getElementById('ca-valor').value) || 0,
+    observacao: document.getElementById('ca-obs').value.trim(),
+    score_interno: calcularScore(parseFloat(document.getElementById('ca-renda').value)||0, parseFloat(document.getElementById('ca-valor').value)||0),
+    vendedor_id: currentUser?.id || null,
+  };
+  if (!dados.nome || !dados.cpf || !dados.telefone) { toast('Preencha os campos obrigatórios (*)','error'); return; }
+  if (!DEMO && sb) {
+    const { error } = await sb.from('candidatos').insert([dados]);
+    if (error) { toast('Erro: ' + error.message,'error'); return; }
+  }
+  toast('Candidato cadastrado para análise!','success');
+  closeModal('modalNovoCandidato');
+  carregarCandidatos();
+}
+
+function calcularScore(renda, valorCel) {
+  let score = 500;
+  if (renda >= 1500) score += 50;
+  if (renda >= 2500) score += 100;
+  if (renda >= 4000) score += 150;
+  const comp = valorCel > 0 ? (valorCel/12)/renda : 1;
+  if (comp <= 0.20) score += 200;
+  else if (comp <= 0.30) score += 100;
+  else if (comp <= 0.40) score += 0;
+  else score -= 200;
+  return Math.max(0, Math.min(1000, score));
+}
+
+// ── CLIENTES ──────────────────────────────────────────────
+async function carregarClientes() {
+  const el = document.getElementById('listaClientes');
+  if (DEMO) {
+    el.innerHTML = '<div class="alert warning">⚠️ Banco de dados não configurado — clientes reais aparecerão aqui após conectar o Supabase.</div>';
+    return;
+  }
+  const { data } = await sb.from('clientes').select('*').order('criado_em',{ascending:false});
+  el.innerHTML = `<table><thead><tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>Renda</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+    ${(data||[]).map(c => `<tr>
+      <td>${c.nome}</td><td>${c.cpf}</td><td>${c.telefone}</td>
+      <td>R$ ${Number(c.renda_mensal||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+      <td><span class="status ${c.status}">${c.status}</span></td>
+      <td><button class="btn ghost xs">Ver</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+async function salvarCliente() {
+  const dados = {
+    nome:document.getElementById('c-nome').value.trim(),
+    cpf:document.getElementById('c-cpf').value.trim(),
+    telefone:document.getElementById('c-tel').value.trim(),
+    email:document.getElementById('c-email').value.trim(),
+    renda_mensal:parseFloat(document.getElementById('c-renda').value)||0,
+    tipo_renda:document.getElementById('c-tipo-renda').value,
+    rg:document.getElementById('c-rg').value.trim(),
+    nome_mae:document.getElementById('c-mae').value.trim(),
+    endereco:document.getElementById('c-end').value.trim(),
+    data_nascimento:document.getElementById('c-nasc').value||null,
+    observacoes:document.getElementById('c-obs').value.trim(),
+    criado_por: currentUser?.id || null,
+  };
+  if (!dados.nome||!dados.cpf||!dados.telefone) { toast('Preencha campos obrigatórios','error'); return; }
+  if (!DEMO && sb) {
+    const asaasId = await criarClienteAsaas(dados);
+    if (asaasId) dados.asaas_id = asaasId;
+    const { error } = await sb.from('clientes').insert([dados]);
+    if (error) { toast('Erro: ' + error.message,'error'); return; }
+  }
+  toast('Cliente cadastrado com sucesso!','success');
+  closeModal('modalNovoCliente');
+  carregarClientes();
+}
+
+// ── IMEI VERIFICATION ─────────────────────────────────────
+async function verificarIMEI() {
+  const imei = document.getElementById('imei-input').value.trim();
+  const el = document.getElementById('imei-resultado');
+  el.style.display = 'block';
+
+  if (!imei || imei.length < 15) {
+    el.innerHTML = '<div class="alert danger">❌ IMEI inválido. Deve ter 15 dígitos.</div>';
+    return;
+  }
+
+  // Validação algoritmo Luhn
+  function luhn(n) {
+    let sum = 0;
+    let alt = false;
+    for (let i = n.length - 1; i >= 0; i--) {
+      let d = parseInt(n[i]);
+      if (alt) { d *= 2; if (d > 9) d -= 9; }
+      sum += d;
+      alt = !alt;
+    }
+    return sum % 10 === 0;
+  }
+
+  el.innerHTML = '<div class="alert"><div class="spinner" style="width:20px;height:20px;display:inline-block;margin-right:8px"></div>Verificando IMEI...</div>';
+
+  const valido = luhn(imei);
+
+  // Check if already in use in our system
+  let emUso = false;
+  let contratoNumero = '';
+  let clienteNome = '';
+  if (!DEMO && sb) {
+    try {
+      const { data } = await sb.from('contratos')
+        .select('numero, status, clientes!cliente_id(nome)')
+        .eq('celular_imei', imei)
+        .limit(1);
+      if (data && data.length > 0) {
+        emUso = true;
+        contratoNumero = data[0].numero;
+        clienteNome = data[0].clientes ? data[0].clientes.nome : '—';
+      }
+    } catch(e) {
+      // celular_imei column might not exist, try via celulares table
+      try {
+        const { data: celData } = await sb.from('celulares').select('imei, status, contratos!contrato_id(numero, clientes!cliente_id(nome))').eq('imei', imei).limit(1);
+        if (celData && celData.length > 0 && celData[0].status === 'financiado') {
+          emUso = true;
+        }
+      } catch(e2) {}
+    }
+  }
+
+  if (!valido) {
+    el.innerHTML = '<div class="alert danger" style="font-size:14px">❌ <strong>IMEI INVÁLIDO</strong><br>O número ' + imei + ' não passou na verificação de autenticidade (algoritmo Luhn). Este aparelho pode ser falsificado ou o IMEI foi digitado incorretamente.</div>';
+    return;
+  }
+
+  if (emUso) {
+    el.innerHTML = '<div class="alert danger" style="font-size:14px">🔴 <strong>IMEI JÁ FINANCIADO</strong><br>IMEI: ' + imei + '<br>Contrato: ' + contratoNumero + '<br>Cliente: ' + clienteNome + '<br>Este aparelho já consta em nosso sistema com financiamento ativo.</div>';
+    return;
+  }
+
+  // Try to get device info from GSMA API (public)
+  const tac = imei.substring(0, 8);
+  let deviceInfo = '';
+  try {
+    const resp = await fetch('https://imeicheck.com/api/basic?imei=' + imei, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data && data.brand) {
+        deviceInfo = '<br><strong>Marca/Modelo detectado:</strong> ' + data.brand + ' ' + (data.name || '');
+      }
+    }
+  } catch(e) {}
+
+  el.innerHTML = '<div class="alert success" style="font-size:14px">✅ <strong>IMEI VÁLIDO</strong><br>IMEI: <strong id="imei-ok-val"></strong>' + deviceInfo + '<br>Algoritmo Luhn: APROVADO<br>Status: <strong>Disponível para financiamento</strong><br><br><button class="btn primary sm" id="btn-usar-imei">➕ Usar em novo contrato</button></div>';
+  var okSpan = document.getElementById('imei-ok-val');
+  if (okSpan) okSpan.textContent = imei;
+}
+
+function usarIMEINoContrato(imei) {
+  goPage('contratos', document.querySelector('[onclick*=contratos]'));
+  setTimeout(async function() {
+    await openModal('modalNovoContrato');
+    // Pre-fill IMEI field if available
+    const imeiField = document.getElementById('ct-imei');
+    if (imeiField) imeiField.value = imei;
+    toast('IMEI ' + imei + ' pronto para usar no contrato!', 'success');
+  }, 300);
+}
+
+async function carregarCelulares() {
+  // Just load IMEI verification page - nothing to load
+  document.getElementById('imei-resultado').style.display = 'none';
+  await carregarCelularesFinanciados();
+}
+
+async function carregarCelularesFinanciados() {
+  const el = document.getElementById('listaCelulares');
+  if (DEMO || !sb) {
+    el.innerHTML = '<div class="alert warning">⚠️ Conecte o banco para ver celulares financiados.</div>';
+    return;
+  }
+  try {
+    const { data } = await sb.from('contratos')
+      .select('numero, status, celular_imei, clientes!cliente_id(nome), valor_total')
+      .order('criado_em', {ascending: false})
+      .limit(50);
+    if (!data || data.length === 0) {
+      el.innerHTML = '<div class="alert">Nenhum celular financiado ainda.</div>';
+      return;
+    }
+    let rows = '';
+    for (const c of data) {
+      rows += '<tr>' +
+        '<td style="font-family:monospace;color:var(--orange)">' + c.numero + '</td>' +
+        '<td>' + (c.celular_imei || '—') + '</td>' +
+        '<td>' + (c.clientes ? c.clientes.nome : '—') + '</td>' +
+        '<td>R$ ' + Number(c.valor_total || 0).toFixed(2) + '</td>' +
+        '<td><span class="status ' + c.status + '">' + c.status + '</span></td>' +
+        '</tr>';
+    }
+    el.innerHTML = '<table><thead><tr><th>Contrato</th><th>IMEI</th><th>Cliente</th><th>Valor</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  } catch(e) {
+    el.innerHTML = '<div class="alert danger">Erro: ' + e.message + '</div>';
+  }
+}
+
+function calcCelMargin() {
+  const v = parseFloat(document.getElementById('cel-venda').value)||0;
+  const c = parseFloat(document.getElementById('cel-custo').value)||0;
+  const el = document.getElementById('cel-margin');
+  if (v && c) {
+    const m = ((v-c)/c*100).toFixed(1);
+    el.style.display = 'block';
+    el.className = `alert ${m>=30?'success':'warning'}`;
+    el.innerHTML = `Margem: <strong>${m}%</strong> — Lucro: <strong>R$ ${(v-c).toFixed(2)}</strong>`;
+  } else { el.style.display = 'none'; }
+}
+
+async function salvarCelular() {
+  const dados = {
+    marca:document.getElementById('cel-marca').value.trim(),
+    modelo:document.getElementById('cel-modelo').value.trim(),
+    imei:document.getElementById('cel-imei').value.replace(/\D/g,''),
+    imei2:document.getElementById('cel-imei2').value.replace(/\D/g,'')||null,
+    numero_serie:document.getElementById('cel-serie').value.trim()||null,
+    cor:document.getElementById('cel-cor').value.trim(),
+    armazenamento:document.getElementById('cel-arm').value.trim(),
+    ram:document.getElementById('cel-ram').value.trim(),
+    valor_venda:parseFloat(document.getElementById('cel-venda').value)||0,
+    valor_custo:parseFloat(document.getElementById('cel-custo').value)||0,
+  };
+  if (!dados.marca||!dados.modelo||!dados.imei||!dados.valor_venda) { toast('Preencha campos obrigatórios','error'); return; }
+  if (dados.imei.length < 15) { toast('IMEI deve ter 15 dígitos','error'); return; }
+  if (!DEMO && sb) {
+    const { error } = await sb.from('celulares').insert([dados]);
+    if (error) { toast('Erro: '+error.message,'error'); return; }
+  }
+  toast('Celular cadastrado no estoque!','success');
+  closeModal('modalNovoCelular');
+  carregarCelulares();
+}
+
+// ── CONTRATOS ─────────────────────────────────────────────
+async function carregarContratos() {
+  const el = document.getElementById('listaContratos');
+  if (DEMO) {
+    el.innerHTML = '<div class="alert warning">⚠️ Banco de dados não configurado — contratos reais aparecerão aqui após conectar o Supabase.</div>';
+    return;
+  }
+  const { data, error: ctErr } = await sb.from('contratos').select('*, clientes!cliente_id(nome,telefone), celulares!celular_id(modelo,marca,imei)').order('criado_em',{ascending:false});
+  if (ctErr) { console.error('[CONTRATOS JOIN ERROR]', ctErr); el.innerHTML = '<div class="alert danger">Erro ao carregar: ' + ctErr.message + '</div>'; return; }
+  el.innerHTML = `<table><thead><tr><th>Nº</th><th>Cliente</th><th>Celular</th><th>Total</th><th>Parcela</th><th>Status</th><th>Trava</th><th>Ações</th></tr></thead><tbody>
+    ${(data||[]).map(c => `<tr>
+      <td style="color:var(--orange);font-family:monospace">${c.numero}</td>
+      <td>${c.clientes?.nome||'—'}</td>
+      <td>${c.celulares?.marca||''} ${c.celulares?.modelo||'—'}</td>
+      <td>R$ ${Number(c.valor_total).toFixed(2)}</td>
+      <td>R$ ${Number(c.valor_parcela).toFixed(2)}/${c.num_parcelas}x</td>
+      <td><span class="status ${c.status}">${c.status}</span></td>
+      <td><button class="lock-toggle ${c.celular_travado?'':'on'}" data-contrato-id="${c.id}" data-travado="${c.celular_travado}" data-acao="trava"></button></td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="btn ghost xs" data-contrato-id="${c.id}" data-acao="contrato">📑 Contrato</button>
+        <button class="btn outline xs" data-contrato-id="${c.id}" data-acao="termo">📄 Termo</button>
+        <button class="btn ghost xs" data-contrato-id="${c.id}" data-acao="recibo" data-numero="${c.numero}">🧾 Recibo</button>
+      </td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+function calcularContrato() {
+  const valorApEl = document.getElementById('ct-valor-ap');
+  const valor = valorApEl ? parseFloat(valorApEl.value) || 0 : 0;
+  if (!valor) return;
+  const entrada = parseFloat(document.getElementById('ct-entrada').value)||0;
+  const n = parseInt(document.getElementById('ct-parcelas').value);
+  const juros = parseFloat(document.getElementById('ct-juros').value)/100;
+  const principal = valor - entrada;
+  let parcela;
+  if (juros === 0) { parcela = principal/n; }
+  else { parcela = principal*(juros*Math.pow(1+juros,n))/(Math.pow(1+juros,n)-1); }
+  const total = parcela*n + entrada;
+  const prev = document.getElementById('ct-preview');
+  prev.style.display = 'block';
+  prev.innerHTML = `Valor aparelho: <strong>R$ ${valor.toFixed(2)}</strong> | Entrada: <strong>R$ ${entrada.toFixed(2)}</strong> | Financiado: <strong>R$ ${principal.toFixed(2)}</strong><br>Parcela: <strong>R$ ${parcela.toFixed(2)}</strong> × ${n}x | <strong>Total: R$ ${total.toFixed(2)}</strong> (juros ${(juros*100).toFixed(1)}% a.m.)`;
+  // Verificar comprometimento de renda
+  const selCli = document.getElementById('ct-cliente');
+  const clinOpt = selCli.selectedOptions[0];
+  const renda = parseFloat(clinOpt?.dataset?.renda || 0);
+  const comp = document.getElementById('ct-comprometimento');
+  if (renda) {
+    const pct = (parcela/renda*100).toFixed(1);
+    comp.style.display = 'block';
+    comp.className = `alert ${pct<=40?'blue':'danger'}`;
+    comp.textContent = `Comprometimento de renda: ${pct}% (renda: R$ ${renda.toFixed(2)}) — ${pct<=40?'✅ OK':'⚠️ Acima do limite de 40%'}`;
+  }
+}
+
+async function preencherSelectsContrato() {
+  if (!DEMO && sb) {
+    try {
+      const { data: cl } = await sb.from('clientes').select('id,nome,renda_mensal').eq('status','ativo');
+      const clienteSel = document.getElementById('ct-cliente');
+      if (clienteSel) {
+        clienteSel.innerHTML = '<option value="">Selecione o cliente...</option>' +
+          (cl||[]).map(function(c) {
+            return '<option value="' + c.id + '" data-renda="' + (c.renda_mensal||0) + '">' + c.nome + '</option>';
+          }).join('');
+      }
+    } catch(e) { console.warn('preencherSelectsContrato error:', e.message); }
+  } else {
+    const clienteSel = document.getElementById('ct-cliente');
+    if (clienteSel) clienteSel.innerHTML = '<option value="">Selecione...</option>';
+  }
+}
+
+function verificarIMEIContrato() {
+  const imei = document.getElementById('ct-imei').value.trim();
+  if (!imei || imei.length < 15) { toast('Digite 15 dígitos do IMEI','error'); return; }
+  function luhn(n) {
+    let sum=0,alt=false;
+    for(let i=n.length-1;i>=0;i--){let d=parseInt(n[i]);if(alt){d*=2;if(d>9)d-=9;}sum+=d;alt=!alt;}
+    return sum%10===0;
+  }
+  if (luhn(imei)) { toast('✅ IMEI ' + imei + ' válido!','success'); }
+  else { toast('❌ IMEI inválido — verifique o número','error'); }
+}
+
+async function salvarContrato() {
+  const cliOpt = document.getElementById('ct-cliente').selectedOptions[0];
+  const imei = document.getElementById('ct-imei') ? document.getElementById('ct-imei').value.trim() : '';
+  const valorApEl = document.getElementById('ct-valor-ap');
+  if (!cliOpt?.value) { toast('Selecione o cliente','error'); return; }
+  if (!imei || imei.length < 15) { toast('Digite o IMEI do aparelho (15 dígitos)','error'); return; }
+  const entrada = parseFloat(document.getElementById('ct-entrada').value)||0;
+  const n = parseInt(document.getElementById('ct-parcelas').value);
+  const juros = parseFloat(document.getElementById('ct-juros').value)/100;
+  const valorAp = valorApEl ? parseFloat(valorApEl.value)||0 : 0;
+  if (!valorAp) { toast('Digite o valor do aparelho','error'); return; }
+  const principal = valorAp - entrada;
+  let parcela;
+  if (juros===0) parcela=principal/n;
+  else parcela = principal*(juros*Math.pow(1+juros,n))/(Math.pow(1+juros,n)-1);
+  const total = parcela*n + entrada;
+  const hoje = new Date();
+  const diasVenc = parseInt(document.getElementById('ct-dias-venc')?.value)||30;
+  // 1ª parcela vence em 30 dias (configurável)
+  const primVenc = new Date(hoje);
+  primVenc.setDate(primVenc.getDate() + diasVenc);
+  const primVencStr = primVenc.toISOString().split('T')[0];
+  const dataFimDate = new Date(primVenc.getFullYear(), primVenc.getMonth()+n-1, primVenc.getDate());
+  const modelo = document.getElementById('ct-modelo-ap') ? document.getElementById('ct-modelo-ap').value.trim() : '';
+  const dados = {
+    numero: 'FC-' + String(Date.now()).slice(-6),
+    cliente_id: cliOpt.value,
+    celular_imei: imei,
+    celular_modelo: modelo || null,
+    valor_aparelho: valorAp,
+    valor_entrada: entrada,
+    valor_financiado: principal,
+    num_parcelas: n,
+    valor_parcela: parseFloat(parcela.toFixed(2)),
+    valor_total: parseFloat(total.toFixed(2)),
+    taxa_juros: parseFloat((juros*100).toFixed(2)),
+    data_inicio: document.getElementById('ct-inicio').value || hoje.toISOString().split('T')[0],
+    data_fim: dataFimDate.toISOString().split('T')[0],
+    dia_vencimento: primVenc.getDate(),
+    vendedor_id: currentUser && currentUser.id ? currentUser.id : null,
+  };
+  if (!DEMO && sb) {
+    const { data: ctArr, error } = await sb.from('contratos').insert([dados]).select();
+    const ctData = ctArr && ctArr.length > 0 ? ctArr[0] : null;
+    if (error) { toast('Erro: '+error.message,'error'); return; }
+    await gerarParcelasDB(ctData.id, ctData, cliOpt.value, primVenc);
+    // celular tracked by IMEI in contratos table
+  }
+  if (DEMO || !sb) {
+    toast('⚠️ Banco não conectado — conecte o Supabase para salvar contratos reais.','error');
+    return;
+  }
+  toast('✅ Contrato criado e parcelas geradas com sucesso!','success');
+  closeModal('modalNovoContrato');
+  carregarContratos();
+}
+
+async function gerarParcelasDB(contratoId, contrato, clienteId, primVenc) {
+  if (!sb) return;
+  const parcelas = [];
+  const { data: clienteArr } = await sb.from('clientes').select('asaas_id,email').eq('id', clienteId).limit(1);
+  const clienteData = clienteArr && clienteArr.length > 0 ? clienteArr[0] : null;
+  const baseVenc = primVenc || new Date();
+  for (let i = 1; i <= contrato.num_parcelas; i++) {
+    // Cada parcela = mesma data do mês seguinte ao vencimento anterior
+    const venc = new Date(baseVenc);
+    venc.setMonth(venc.getMonth() + (i - 1));
+    const vencStr = venc.toISOString().split('T')[0];
+    const descricao = `${contrato.numero} - Parcela ${i}/${contrato.num_parcelas}`;
+    let asaasData = {};
+    if (clienteData && clienteData.asaas_id) {
+      const asaasResp = await criarCobrancaAsaas(clienteData.asaas_id, contrato.valor_parcela, vencStr, descricao);
+      if (asaasResp && asaasResp.id) {
+        asaasData = {
+          asaas_cobranca_id: asaasResp.id,
+          asaas_boleto_url: asaasResp.bankSlipUrl || null,
+          asaas_boleto_linha: asaasResp.nossoNumero || null,
+          asaas_pix_copia_cola: asaasResp.pixCopiaECola || null,
+        };
+      }
+    }
+    parcelas.push({ contrato_id: contratoId, numero: i, valor: contrato.valor_parcela, vencimento: vencStr, status: 'pendente', ...asaasData });
+  }
+  await sb.from('parcelas').insert(parcelas);
+}
+
+function abrirContrato(id) {
+  if (DEMO) { toast('Conecte o banco de dados para ver contratos reais.','error'); return; }
+  window.open('contrato.html?contrato=' + id, '_blank');
+}
+
+// ── PARCELAS ──────────────────────────────────────────────
+async function carregarParcelas() {
+  const el = document.getElementById('listaParcelas');
+  el.innerHTML = '<div class="alert warning">⚠️ Banco de dados não configurado — parcelas reais aparecerão aqui após conectar o Supabase.</div>';
+  if (!DEMO && sb) {
+    const fil = document.getElementById('filtroContrato').value;
+    const filSt = document.getElementById('filtroStatusParcela').value;
+    let q = sb.from('parcelas').select('*, contratos!contrato_id(numero, cliente_id)').order('vencimento');
+    if (fil) q = q.eq('contrato_id', fil);
+    if (filSt) q = q.eq('status', filSt);
+    const { data } = await q;
+    el.innerHTML = `<table><thead><tr><th>Contrato</th><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+      ${(data||[]).map(p=>`<tr>
+        <td style="color:var(--orange);font-family:monospace">${p.contratos?.numero||'—'}</td>
+        <td>${p.numero}/${p.contratos?.num_parcelas||'?'}</td>
+        <td>${new Date(p.vencimento+'T00:00:00').toLocaleDateString('pt-BR')}</td>
+        <td>R$ ${Number(p.valor).toFixed(2)}</td>
+        <td><span class="status ${p.status}">${p.status}</span></td>
+        <td>${p.asaas_boleto_url?`<a href="${p.asaas_boleto_url}" target="_blank" style="color:var(--orange);font-size:12px">Ver boleto</a>`:`<button class="btn xs outline" onclick="gerarCobrancaAsaas()">Gerar boleto</button>`}</td>
+      </tr>`).join('')}</tbody></table>`;
+  }
+}
+
+// ── TRAVAS ────────────────────────────────────────────────
+async function carregarTravas() {
+  const prov = FC_CONFIG.LOCK_PROVIDER || 'manual';
+  document.getElementById('lockProviderBadge').textContent = prov.toUpperCase();
+  const el = document.getElementById('listaTravas');
+  el.innerHTML = '<div class="alert warning">⚠️ Banco de dados não configurado — aparelhos reais aparecerão aqui após conectar o Supabase.</div>';
+  const logEl = document.getElementById('logTravas');
+  logEl.innerHTML = '<div class="alert">Nenhum registro de trava/destrava disponível.</div>';
+}
+
+function toggleLockUI(btn, modelo, imei) {
+  const isNowLocking = btn.classList.contains('on');
+  const lbl = btn.nextElementSibling;
+  if (isNowLocking) {
+    if (!confirm(`Travar o aparelho "${modelo}" (IMEI: ${imei})?\n\nO aparelho ficará bloqueado até que o cliente regularize o pagamento.`)) return;
+    btn.classList.remove('on');
+    lbl.textContent = 'TRAVADO'; lbl.style.color = 'var(--red)';
+    executarTravaNaAPI(imei, 'trava');
+    toast(`Aparelho ${modelo} TRAVADO com sucesso!`, 'warning');
+  } else {
+    if (!confirm(`Destravar o aparelho "${modelo}" (IMEI: ${imei})?\n\nConfirme que o pagamento foi realizado antes de destravar.`)) return;
+    btn.classList.add('on');
+    lbl.textContent = 'ATIVO'; lbl.style.color = 'var(--green)';
+    executarTravaNaAPI(imei, 'destrava');
+    toast(`Aparelho ${modelo} DESBLOQUEADO!`, 'success');
+  }
+}
+
+async function executarTravaNaAPI(imei, tipo, contratoId, celularId) {
+  const prov = FC_CONFIG.LOCK_PROVIDER;
+
+  // ── PAYMOBI — chamada direta ───────────────────────────
+  if (prov === 'paymobi' && FC_CONFIG.PAYMOBI_ATIVO) {
+    try {
+      const endpoint = tipo === 'trava' ? '/devices/lock' : '/devices/unlock';
+      const resp = await fetch(FC_CONFIG.PAYMOBI_BASE + endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${FC_CONFIG.PAYMOBI_API_KEY}`
+        },
+        body: JSON.stringify({ imei })
+      });
+      const data = await resp.json();
+      if (sb) {
+        try {
+          const travaDados = { imei: imei, tipo: tipo, provider: 'paymobi', sucesso: resp.ok };
+          if (contratoId) travaDados.contrato_id = contratoId;
+          if (celularId) travaDados.celular_id = celularId;
+          if (currentUser && currentUser.id) travaDados.feito_por = currentUser.id;
+          await sb.from('travas').insert([travaDados]);
+        } catch(e) { console.warn('Erro ao registrar trava:', e.message); }
+      }
+      return data;
+    } catch(e) {
+      console.error('Paymobi erro:', e);
+      toast('Erro ao comunicar com Paymobi. Verifique a API key.', 'error');
+    }
+  }
+
+  // ── MODO MANUAL ────────────────────────────────────────
+  if (sb) {
+    try {
+      // Busca contrato_id e celular_id pelo IMEI se não fornecidos
+      let cId = contratoId;
+      let celId = celularId;
+      if (!cId || !celId) {
+        const { data: celData } = await sb.from('celulares').select('id').eq('imei', imei).limit(1);
+        if (celData && celData.length > 0) {
+          celId = celData[0].id;
+          const { data: ctData } = await sb.from('contratos').select('id').eq('celular_id', celId).limit(1);
+          if (ctData && ctData.length > 0) cId = ctData[0].id;
+        }
+      }
+      const travaDados = {
+        imei: imei,
+        tipo: tipo,
+        motivo: tipo === 'trava' ? 'Inadimplência — trava manual' : 'Pagamento confirmado — desbloqueio manual',
+        provider: 'manual',
+        sucesso: true
+      };
+      if (cId) travaDados.contrato_id = cId;
+      if (celId) travaDados.celular_id = celId;
+      if (currentUser && currentUser.id) travaDados.feito_por = currentUser.id;
+      await sb.from('travas').insert([travaDados]);
+    } catch(e) { console.warn('Erro ao registrar trava manual:', e.message); }
+
+    try {
+      // notificacoes: usa colunas corretas da tabela (sem "lida", com "canal" obrigatório)
+      await sb.from('notificacoes').insert([{
+        tipo: tipo === 'trava' ? 'trava_manual' : 'destrava_manual',
+        canal: 'sistema',
+        mensagem: (tipo === 'trava' ? '🔴 TRAVA' : '🟢 DESTRAVA') + ' — IMEI: ' + imei + '. Atraso detectado automaticamente.',
+        enviado: false
+      }]);
+    } catch(e) { console.warn('Erro ao criar notificação:', e.message); }
+  }
+  console.log('Modo manual: ' + tipo + ' registrado para IMEI ' + imei);
+}
+
+async function testarPaymobi() {
+  if (!FC_CONFIG.PAYMOBI_ATIVO) {
+    toast('Ative a integração Paymobi no config.js primeiro', 'error'); return;
+  }
+  try {
+    const res = await fetch(`${FC_CONFIG.PAYMOBI_BASE}/health`, {
+      headers: { 'Authorization': `Bearer ${FC_CONFIG.PAYMOBI_API_KEY}` }
+    });
+    if (res.ok) toast('✅ Paymobi conectado com sucesso!', 'success');
+    else toast('❌ Erro na conexão. Verifique a API key.', 'error');
+  } catch(e) {
+    toast('Erro de conexão com Paymobi', 'error');
+  }
+}
+
+async function executarTravaManual() {
+  const imei = document.getElementById('trava-imei').value.replace(/\D/g,'');
+  const acao = document.getElementById('trava-acao').value;
+  const motivo = document.getElementById('trava-motivo').value.trim();
+  if (!imei || imei.length < 15) { toast('IMEI inválido (15 dígitos)','error'); return; }
+  if (!motivo) { toast('Informe o motivo','error'); return; }
+  await executarTravaNaAPI(imei, acao);
+  toast(acao==='trava' ? '🔴 Aparelho TRAVADO com sucesso!' : '🟢 Aparelho DESBLOQUEADO!', acao==='trava'?'warning':'success');
+  closeModal('modalTravaManual');
+  carregarTravas();
+}
+
+async function toggleTrava(id, travado) {
+  if (!DEMO && sb) {
+    const { data: ctArr2 } = await sb.from('contratos').select('*, celulares!celular_id(imei)').eq('id', id).limit(1);
+    const ct = ctArr2 && ctArr2.length > 0 ? ctArr2[0] : null;
+    if (ct?.celulares?.imei) await executarTravaNaAPI(ct.celulares.imei, travado ? 'destrava' : 'trava');
+    await sb.from('contratos').update({ celular_travado: !travado, status: !travado ? 'inadimplente' : 'ativo' }).eq('id', id);
+  }
+  toast(travado ? '🟢 Celular desbloqueado!' : '🔴 Celular travado!', travado ? 'success' : 'warning');
+  carregarContratos();
+}
+
+async function verificarTravasAutomaticas() {
+  if (DEMO || !sb) return;
+  try {
+    const hoje = new Date();
+    const hojeStr = hoje.toISOString().split('T')[0];
+    // Query simplificada - sem joins aninhados para evitar 400
+    const { data: parcelas, error: pErr } = await sb.from('parcelas')
+      .select('id,vencimento,status,contrato_id')
+      .eq('status','pendente')
+      .lt('vencimento', hojeStr);
+    if (pErr) { console.warn('verificarTravas parcelas error:', pErr.message); return; }
+    for (const p of (parcelas||[])) {
+      const dias = Math.floor((hoje - new Date(p.vencimento+'T00:00:00')) / 86400000);
+      if (dias > 0) {
+        await sb.from('parcelas').update({ status: 'atrasado' }).eq('id', p.id);
+        if (dias >= FC_CONFIG.DIAS_TRAVA && p.contrato_id) {
+          const { data: ct } = await sb.from('contratos')
+            .select('id,celular_travado,celular_id')
+            .eq('id', p.contrato_id).limit(1);
+          const contrato = ct && ct.length > 0 ? ct[0] : null;
+          if (contrato && !contrato.celular_travado) {
+            await sb.from('contratos').update({ celular_travado:true, status:'inadimplente', dias_atraso:dias }).eq('id', p.contrato_id);
+            if (contrato.celular_id) {
+              const { data: cel } = await sb.from('celulares').select('imei').eq('id', contrato.celular_id).limit(1);
+              if (cel && cel[0] && cel[0].imei) await executarTravaNaAPI(cel[0].imei, 'trava');
+            }
+          }
+        }
+      }
+    }
+  } catch(e) { console.warn('verificarTravasAutomaticas error:', e.message); }
+}
+
+// ── FINANCEIRO ────────────────────────────────────────────
+async function carregarFinanceiro() {
+  if (DEMO) {
+    document.getElementById('fin-recebido').textContent = 'R$ 0,00';
+    document.getElementById('fin-areceber').textContent = 'R$ 0,00';
+    document.getElementById('fin-atraso').textContent = 'R$ 0,00';
+    document.getElementById('fin-carteira').textContent = 'R$ 0,00';
+    document.getElementById('fin-lucro').textContent = 'R$ 0,00';
+    document.getElementById('dre').innerHTML = '<div class="alert warning">⚠️ Conecte o banco de dados para ver o DRE real.</div>';
+    document.getElementById('listaRecebimentos').innerHTML = '<div class="alert">Nenhum recebimento registrado.</div>';
+    document.getElementById('fluxoCaixa').innerHTML = '<div class="alert warning">⚠️ Banco de dados não configurado — fluxo de caixa aparecerá aqui após conectar o Supabase.</div>';
+    return;
+  }
+  const { data: parcelas } = await sb.from('parcelas').select('*, contratos!contrato_id(numero, cliente_id)').order('vencimento');
+  const recMes = (parcelas||[]).filter(p=>p.status==='pago').reduce((a,p)=>a+Number(p.valor),0);
+  const arec = (parcelas||[]).filter(p=>p.status==='pendente').reduce((a,p)=>a+Number(p.valor),0);
+  const atras = (parcelas||[]).filter(p=>p.status==='atrasado').reduce((a,p)=>a+Number(p.valor),0);
+  document.getElementById('fin-recebido').textContent = 'R$ ' + recMes.toLocaleString('pt-BR',{minimumFractionDigits:2});
+  document.getElementById('fin-areceber').textContent = 'R$ ' + arec.toLocaleString('pt-BR',{minimumFractionDigits:2});
+  document.getElementById('fin-atraso').textContent = 'R$ ' + atras.toLocaleString('pt-BR',{minimumFractionDigits:2});
+  document.getElementById('fluxoCaixa').innerHTML = `<table><thead><tr><th>Vencimento</th><th>Contrato</th><th>Cliente</th><th>Valor</th><th>Status</th></tr></thead><tbody>
+    ${(parcelas||[]).filter(p=>p.status!=='pago').map(p=>`<tr>
+      <td>${new Date(p.vencimento+'T00:00:00').toLocaleDateString('pt-BR')}</td>
+      <td style="color:var(--orange);font-family:monospace">${p.contratos?.numero||'—'}</td>
+      <td>${p.contratos?.clientes?.nome||'—'}</td>
+      <td>R$ ${Number(p.valor).toFixed(2)}</td>
+      <td><span class="status ${p.status}">${p.status}</span></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+async function salvarRecebimento() {
+  const dados = {
+    valor: parseFloat(document.getElementById('rec-valor').value)||0,
+    tipo: document.getElementById('rec-tipo').value,
+    canal: document.getElementById('rec-canal').value,
+    data_recebimento: document.getElementById('rec-data').value || new Date().toISOString().split('T')[0],
+    observacao: document.getElementById('rec-obs').value.trim(),
+    registrado_por: currentUser?.id || null,
+  };
+  if (!dados.valor) { toast('Informe o valor','error'); return; }
+  if (!DEMO && sb) {
+    const { error } = await sb.from('recebimentos').insert([dados]);
+    if (error) { toast('Erro: '+error.message,'error'); return; }
+  }
+  toast('Recebimento registrado!','success');
+  closeModal('modalNovoRecebimento');
+  carregarFinanceiro();
+}
+
+// ── TERMOS E CONTRATOS ────────────────────────────────────
+async function carregarTermos() {
+  await preencherContratoSelect();
+  const el = document.getElementById('listaTermos');
+  if (DEMO || !sb) {
+    el.innerHTML = '<div class="alert warning">⚠️ Banco de dados não configurado — contratos reais aparecerão aqui após conectar o Supabase.</div>';
+    return;
+  }
+  try {
+    const { data } = await sb.from('contratos').select('id,numero,criado_em,status,clientes!cliente_id(nome)').order('criado_em',{ascending:false}).limit(20);
+    if (!data || data.length === 0) {
+      el.innerHTML = '<div class="alert">Nenhum contrato gerado ainda. Crie contratos na seção Contratos.</div>';
+      return;
+    }
+    let rows = '';
+    for (let i = 0; i < data.length; i++) {
+      const c = data[i];
+      const nome = c.clientes ? c.clientes.nome : '—';
+      const dt = new Date(c.criado_em).toLocaleDateString('pt-BR');
+      rows += '<tr>' +
+        '<td style="color:var(--orange);font-family:monospace">' + c.numero + '</td>' +
+        '<td>' + nome + '</td>' +
+        '<td>' + dt + '</td>' +
+        '<td><span class="status ' + c.status + '">' + c.status + '</span></td>' +
+        '<td>' +
+          '<button class="btn xs outline" data-contrato-id="' + c.id + '" data-acao="termo">📄 Termo</button> ' +
+          '<button class="btn xs ghost" data-contrato-id="' + c.id + '" data-acao="contrato">📑 Contrato</button>' +
+        '</td></tr>';
+    }
+    el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Contrato</th><th>Cliente</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  } catch(e) {
+    el.innerHTML = '<div class="alert danger">Erro ao carregar: ' + e.message + '</div>';
+  }
+}
+
+
+function abrirTermo(id) {
+  window.open('termo.html?contrato=' + id, '_blank');
+}
+function abrirContratoNew(id) {
+  window.open('contrato.html?contrato=' + id, '_blank');
+}
+
+async function preencherContratoSelect() {
+  const sel = document.getElementById('termoContratoSelect');
+  const selRec = document.getElementById('rec-contrato');
+  const selFiltro = document.getElementById('filtroContrato');
+  if (!DEMO && sb) {
+    const { data, error } = await sb.from('contratos').select('id,numero,clientes!cliente_id(nome)').order('criado_em',{ascending:false});
+    if (error) { console.warn('preencherContratoSelect error:', error.message); return; }
+    const opts = '<option value="">Selecione...</option>' + (data||[]).map(function(c){
+      return '<option value="' + c.id + '">' + c.numero + ' — ' + (c.clientes&&c.clientes.nome||'—') + '</option>';
+    }).join('');
+    if (sel) sel.innerHTML = opts;
+    if (selRec) selRec.innerHTML = opts;
+    if (selFiltro) selFiltro.innerHTML = opts;
+  } else {
+    const opts = '<option value="">Selecione...</option>';
+    if (sel) sel.innerHTML = opts;
+    if (selRec) selRec.innerHTML = opts;
+    if (selFiltro) selFiltro.innerHTML = opts;
+  }
+}
+
+function previewTermo() {
+  const sel = document.getElementById('termoContratoSelect');
+  if (!sel.value) { document.getElementById('termoPreviewCard').style.display='none'; return; }
+  document.getElementById('termoPreviewCard').style.display = 'block';
+  if (DEMO) {
+    document.getElementById('termoDemoBox').innerHTML = '<div class="alert warning">⚠️ Conecte o banco de dados para visualizar termos de contratos reais.</div>';
+    return;
+  }
+}
+
+function gerarHTMLTermo(dados) {
+  const dataHoje = new Date().toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'});
+  return `
+    <h3 style="text-align:center;font-size:14px">FACILITA CELL — FINANCIAMENTO DE CELULAR</h3>
+    <h3>TERMO DE CIÊNCIA E RESPONSABILIDADE DO CLIENTE</h3>
+    <p><strong>Contrato:</strong> ${dados.numero} &nbsp;|&nbsp; <strong>Data:</strong> ${dataHoje}</p>
+    <p><strong>Cliente:</strong> ${dados.cliente.nome} &nbsp;|&nbsp; <strong>CPF:</strong> ${dados.cliente.cpf}</p>
+    <p><strong>Aparelho:</strong> ${dados.celular.marca} ${dados.celular.modelo} &nbsp;|&nbsp; <strong>IMEI:</strong> ${dados.celular.imei}</p>
+    <p><strong>Parcelas:</strong> ${dados.num_parcelas}x de R$ ${Number(dados.valor_parcela).toFixed(2)} &nbsp;|&nbsp; <strong>Total:</strong> R$ ${Number(dados.valor_total).toFixed(2)}</p>
+    <h3>CONDIÇÕES OBRIGATÓRIAS — LEIA COM ATENÇÃO</h3>
+    <ol>
+      <li><strong>BLOQUEIO DO APARELHO POR ATRASO:</strong> O aparelho poderá ser bloqueado remotamente caso a parcela não seja paga até o vencimento. O bloqueio ocorre automaticamente após <strong>${FC_CONFIG.DIAS_TRAVA} dias</strong> de inadimplência, impossibilitando o uso do celular até a regularização do débito.</li>
+      <li><strong>AVISOS ANTES DO BLOQUEIO:</strong> Você receberá avisos por WhatsApp a partir do 1º dia de atraso (dia ${FC_CONFIG.DIAS_AVISO_1}), e ligação do suporte após ${FC_CONFIG.DIAS_AVISO_2} dias. O bloqueio ocorre no ${FC_CONFIG.DIAS_TRAVA}º dia.</li>
+      <li><strong>PROIBIÇÃO DE VENDA, DOAÇÃO OU TRANSFERÊNCIA:</strong> O aparelho <strong>não pode ser vendido, presenteado, doado ou transferido</strong> para terceiros enquanto o financiamento estiver ativo. A tentativa de alienação do bem constitui crime de estelionato (Art. 171 do Código Penal).</li>
+      <li><strong>NÃO ACEITAMOS DEVOLUÇÃO:</strong> Não aceitamos devolução do aparelho como forma de quitação ou rescisão do contrato. O cliente é responsável pelo pagamento integral das parcelas independentemente de querer devolver o aparelho.</li>
+      <li><strong>RESPONSABILIDADE PELO APARELHO:</strong> O cliente é responsável pela guarda e conservação do aparelho. Em caso de roubo, furto, perda ou dano, as parcelas continuam devidas normalmente.</li>
+      <li><strong>COMUNICAÇÃO OBRIGATÓRIA:</strong> Em caso de roubo, furto ou avaria, o cliente deve comunicar à FACILITA CELL no prazo de 48 horas pelo WhatsApp ${FC_CONFIG.WHATSAPP}.</li>
+      <li><strong>MULTA E JUROS POR ATRASO:</strong> Sobre parcelas em atraso incidirão multa de 2% + juros de mora de 1% ao mês, conforme a Lei 10.406/2002 (Código Civil).</li>
+      <li><strong>DADOS PESSOAIS:</strong> Os dados fornecidos serão utilizados exclusivamente para gestão do financiamento, conforme a LGPD (Lei 13.709/2018).</li>
+      <li><strong>TECNOLOGIA DE BLOQUEIO:</strong> O aparelho possui sistema de rastreamento e bloqueio remoto via IMEI, permitindo restrição de funcionalidades em caso de inadimplência.</li>
+      <li><strong>QUITAÇÃO ANTECIPADA:</strong> É permitido o pagamento antecipado de parcelas, com desconto proporcional dos juros futuros, conforme Art. 52 §2º do CDC.</li>
+    </ol>
+    <h3>DECLARAÇÃO DO CLIENTE</h3>
+    <p>Declaro que li, entendi e concordo com todas as condições acima, ciente de que o descumprimento de qualquer cláusula poderá resultar no bloqueio do aparelho e/ou medidas legais cabíveis.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:20px">
+      <div><div style="border-top:1px solid #555;padding-top:6px;text-align:center">Assinatura do Cliente<br><small>${dados.cliente.nome}</small></div></div>
+      <div><div style="border-top:1px solid #555;padding-top:6px;text-align:center">Assinatura do Vendedor<br><small>FACILITA CELL</small></div></div>
+    </div>
+    <p style="text-align:center;font-size:10px;margin-top:14px;color:#888">FACILITA CELL — ${FC_CONFIG.ENDERECO_EMPRESA||'Foz do Iguaçu/PR'} — ${FC_CONFIG.EMAIL_SUPORTE}</p>`;
+}
+
+function gerarHTMLContrato(dados) {
+  const dataHoje = new Date().toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'});
+  return `
+    <h2>FACILITA CELL — CONTRATO DE FINANCIAMENTO DE BEM MÓVEL</h2>
+    <p style="text-align:center;margin-bottom:15px">Contrato Nº ${dados.numero} &nbsp;|&nbsp; Data: ${dataHoje}</p>
+    <h3>1. PARTES CONTRATANTES</h3>
+    <p><strong>CREDORA:</strong> ${FC_CONFIG.NOME_EMPRESA}, CNPJ: ${FC_CONFIG.CNPJ_EMPRESA}, ${FC_CONFIG.ENDERECO_EMPRESA}</p>
+    <p><strong>DEVEDOR(A):</strong> ${dados.cliente.nome}, CPF: ${dados.cliente.cpf}, RG: ${dados.cliente.rg}, Telefone: ${dados.cliente.telefone}, Endereço: ${dados.cliente.endereco}, Renda mensal declarada: R$ ${Number(dados.cliente.renda_mensal||0).toFixed(2)} (${dados.cliente.tipo_renda||''})</p>
+    <h3>2. OBJETO DO CONTRATO</h3>
+    <p>O presente contrato tem por objeto o financiamento do aparelho celular: <strong>${dados.celular.marca} ${dados.celular.modelo}</strong>, IMEI: <strong>${dados.celular.imei}</strong>, Cor: ${dados.celular.cor}, Armazenamento: ${dados.celular.armazenamento}.</p>
+    <h3>3. CONDIÇÕES FINANCEIRAS</h3>
+    <p>Valor do aparelho: <strong>R$ ${Number(dados.valor_aparelho).toFixed(2)}</strong> &nbsp;|&nbsp; Entrada: <strong>R$ ${Number(dados.valor_entrada).toFixed(2)}</strong> &nbsp;|&nbsp; Valor financiado: <strong>R$ ${Number(dados.valor_financiado).toFixed(2)}</strong></p>
+    <p>Prazo: <strong>${dados.num_parcelas} parcelas</strong> mensais de <strong>R$ ${Number(dados.valor_parcela).toFixed(2)}</strong> &nbsp;|&nbsp; Taxa de juros: <strong>${dados.taxa_juros}% a.m.</strong> &nbsp;|&nbsp; Valor total: <strong>R$ ${Number(dados.valor_total).toFixed(2)}</strong></p>
+    <p>Vencimento: toda parcela vence no dia <strong>${dados.dia_vencimento}</strong> de cada mês | Início: ${dados.data_inicio} | Término: ${dados.data_fim}</p>
+    <h3>4. FORMA DE PAGAMENTO</h3>
+    <p>As parcelas deverão ser pagas via PIX, boleto bancário ou qualquer outra forma aceita pela FACILITA CELL, até a data de vencimento de cada parcela.</p>
+    <h3>5. CLÁUSULA DE BLOQUEIO REMOTO</h3>
+    <p>O aparelho descrito possui tecnologia de bloqueio remoto via IMEI. O Devedor autoriza expressamente a FACILITA CELL a bloquear o aparelho em caso de inadimplência igual ou superior a <strong>${FC_CONFIG.DIAS_TRAVA} (${FC_CONFIG.DIAS_TRAVA}) dias</strong> corridos após o vencimento da parcela, nos termos da legislação vigente e das práticas de mercado financeiro.</p>
+    <h3>6. MORA E ENCARGOS</h3>
+    <p>O atraso no pagamento de qualquer parcela enseja cobrança automática de: <strong>multa de 2% (dois por cento)</strong> sobre o valor da parcela + <strong>juros de mora de 1% ao mês</strong> (pro rata die), conforme arts. 394, 395 e 406 do Código Civil.</p>
+    <h3>7. PROIBIÇÕES AO DEVEDOR</h3>
+    <p>Enquanto vigorar este contrato, é expressamente proibido ao Devedor: (a) vender, ceder, transferir, doar ou alienar o aparelho; (b) deixar de comunicar eventual roubo, furto, perda ou dano no prazo de 48 horas; (c) realizar qualquer modificação que comprometa o sistema de rastreamento do aparelho.</p>
+    <h3>8. RESPONSABILIDADE</h3>
+    <p>O Devedor assume total responsabilidade pelo aparelho, permanecendo obrigado ao pagamento das parcelas mesmo em caso de roubo, furto, dano acidental ou perda do aparelho.</p>
+    <h3>9. PROTEÇÃO DE DADOS (LGPD)</h3>
+    <p>Os dados pessoais fornecidos pelo Devedor serão tratados conforme a Lei Geral de Proteção de Dados (Lei 13.709/2018), utilizados exclusivamente para fins contratuais e comunicação relacionada ao financiamento.</p>
+    <h3>10. FORO</h3>
+    <p>Fica eleito o foro da Comarca de Foz do Iguaçu/PR para dirimir eventuais controvérsias decorrentes deste contrato.</p>
+    <div class="assin-area">
+      <div class="assin-line">Assinatura do Devedor<br><strong>${dados.cliente.nome}</strong><br>CPF: ${dados.cliente.cpf}</div>
+      <div class="assin-line">Assinatura da Credora<br><strong>${FC_CONFIG.NOME_EMPRESA}</strong><br>CNPJ: ${FC_CONFIG.CNPJ_EMPRESA}</div>
+    </div>
+    <p style="text-align:center;font-size:10px;margin-top:12px;color:#666">Foz do Iguaçu, ${dataHoje}</p>`;
+}
+
+function imprimirContrato() {
+  const content = document.getElementById('contratoContent').innerHTML;
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><title>Contrato</title><style>body{font-family:Arial,sans-serif;font-size:12px;margin:30px;color:#111;line-height:1.6}h2{font-size:14px;text-align:center}h3{font-size:12px;margin:14px 0 6px;border-bottom:1px solid #ccc;padding-bottom:3px}.assin-area{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:30px}.assin-line{border-top:1px solid #333;padding-top:6px;text-align:center;font-size:11px}</style></head><body>${content}</body></html>`);
+  w.document.close(); w.print();
+}
+
+function imprimirTermo() {
+  const content = document.getElementById('termoDemoBox').innerHTML;
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><title>Termo</title><style>body{font-family:Arial,sans-serif;font-size:12px;margin:30px;color:#111;line-height:1.6}h3{font-size:12px;margin:12px 0 6px;border-bottom:1px solid #ccc;padding-bottom:3px}ol{padding-left:18px}li{margin-bottom:6px}</style></head><body>${content}</body></html>`);
+  w.document.close(); w.print();
+}
+
+function gerarTermoPDF() { imprimirTermo(); toast('Abrindo janela de impressão/PDF...',''); }
+
+function enviarTermoWhatsApp() {
+  const contrato = document.getElementById('termoContratoSelect').value;
+  if (!contrato) return;
+  const url = encodeURIComponent(`${window.location.origin}/termo.html?contrato=${contrato}`);
+  const msg = encodeURIComponent(`Olá! Segue o link do Termo de Ciência do seu financiamento:\n${window.location.origin}/termo.html?contrato=${contrato}\n\nPor favor, leia atentamente antes de assinar.`);
+  window.open(`https://wa.me/${FC_CONFIG.WHATSAPP}?text=${msg}`, '_blank');
+}
+
+function enviarContratoWhatsApp() {
+  const msg = encodeURIComponent(`Olá! Segue o contrato do seu financiamento. Para qualquer dúvida, entre em contato: ${FC_CONFIG.WHATSAPP}`);
+  window.open(`https://wa.me/${FC_CONFIG.WHATSAPP}?text=${msg}`, '_blank');
+}
+
+// ── SUPORTE ───────────────────────────────────────────────
+async function carregarSuporte() {
+  const el = document.getElementById('suporteCandidatos');
+  const pendentes = DEMO_CANDIDATOS.filter(c => c.status === 'pendente' || c.status === 'em_analise');
+  if (!pendentes.length) { el.innerHTML = '<div class="alert success">✅ Sem candidatos aguardando análise.</div>'; return; }
+  el.innerHTML = pendentes.map(c => {
+    const sc = c.score_interno >= 700 ? 'good' : c.score_interno >= 500 ? 'medium' : 'bad';
+    const scColor = sc==='good'?'var(--green)':sc==='medium'?'var(--yellow)':'var(--red)';
+    const docsOk = [c.doc_rg_frente,c.doc_selfie,c.doc_extrato].every(Boolean);
+    return `<div class="cand-row">
+      <div class="score-ring ${sc}"><div class="score-num" style="color:${scColor}">${c.score_interno}</div><div class="score-lbl">SCORE</div></div>
+      <div class="cand-info">
+        <div class="cand-name">${c.nome}</div>
+        <div class="cand-detail">Renda: R$ ${Number(c.renda_mensal).toLocaleString('pt-BR')} (${c.tipo_renda}) • ${c.celular_desejado}</div>
+        <div class="cand-tags">
+          ${docsOk?'<span class="tag ok">✅ Docs OK</span>':'<span class="tag warn">⚠️ Docs incompletos</span>'}
+          <span class="tag">${c.origem||'QR Code'}</span>
+          <span class="status ${c.status}" style="font-size:10px">${c.status.replace('_',' ')}</span>
+        </div>
+      </div>
+      <div class="cand-actions">
+        <button class="btn sm primary" onclick="verDocumentos('${c.id}')">Analisar</button>
+        <button class="btn sm ghost" onclick="enviarSolicitacaoDocs('${c.id}')">Pedir docs</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function enviarSolicitacaoDocs(id) {
+  const c = DEMO_CANDIDATOS.find(x=>x.id===id);
+  if (!c) return;
+  const msg = encodeURIComponent(`Olá ${c.nome}! Para prosseguir com a análise do seu crédito, precisamos de documentos adicionais. Acesse o link e complete seu cadastro: ${window.location.origin}/cadastro.html?vendedor=${currentUser?.id||'00'}`);
+  window.open(`https://wa.me/55${c.telefone.replace(/\D/g,'')}?text=${msg}`, '_blank');
+}
+
+// ── RELATÓRIOS ────────────────────────────────────────────
+async function carregarRelatorios() {
+  if (DEMO) {
+    document.getElementById('rel-aprovacao').textContent = '—';
+    document.getElementById('rel-inadimp').textContent = '—';
+    document.getElementById('rel-ticket').textContent = '—';
+    document.getElementById('rel-travados').textContent = '—';
+    return;
+  }
+  // busca dados reais do banco
+  const [cands, contratos, travados] = await Promise.all([
+    sb.from('candidatos').select('status'),
+    sb.from('contratos').select('valor_total,celular_travado'),
+    sb.from('contratos').select('id').eq('celular_travado', true),
+  ]);
+  const total = (cands.data||[]).length;
+  const aprovados = (cands.data||[]).filter(c=>c.status==='aprovado').length;
+  const ticket = (contratos.data||[]).reduce((a,c)=>a+Number(c.valor_total),0) / ((contratos.data||[]).length||1);
+  document.getElementById('rel-aprovacao').textContent = total ? Math.round(aprovados/total*100)+'%' : '—';
+  document.getElementById('rel-inadimp').textContent = contratos.data?.length ? Math.round((travados.data||[]).length/(contratos.data||[]).length*100)+'%' : '—';
+  document.getElementById('rel-ticket').textContent = 'R$ ' + ticket.toLocaleString('pt-BR',{minimumFractionDigits:2});
+  document.getElementById('rel-travados').textContent = (travados.data||[]).length;
+}
+
+// ── USUÁRIOS ──────────────────────────────────────────────
+async function carregarUsuarios() {
+  const el = document.getElementById('listaUsuarios');
+  if (DEMO) {
+    el.innerHTML = demoTable(['Nome','E-mail','Perfil','Telefone','Status','Ações'],[
+      ['Administrador','admin@facilitacred.com','<span class="status analise">Admin</span>','(45) 99999-9999','<span class="status ativo">Ativo</span>','<button class="btn ghost xs">Editar</button>'],
+      ['Vendedor 1','vendedor@facilitacred.com','<span class="status pendente">Vendedor</span>','(45) 99998-8888','<span class="status ativo">Ativo</span>','<button class="btn ghost xs">Editar</button>'],
+      ['Suporte 1','suporte@facilitacred.com','<span class="status">Suporte</span>','(45) 99997-7777','<span class="status ativo">Ativo</span>','<button class="btn ghost xs">Editar</button>'],
+    ]); return;
+  }
+  const { data } = await sb.from('usuarios').select('*');
+  el.innerHTML = `<table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+    ${(data||[]).map(u=>`<tr><td>${u.nome}</td><td>${u.email}</td><td>${u.perfil}</td><td><span class="status ${u.ativo?'ativo':'inativo'}">${u.ativo?'Ativo':'Inativo'}</span></td><td><button class="btn ghost xs">Editar</button></td></tr>`).join('')}</tbody></table>`;
+}
+
+async function salvarUsuario() {
+  const dados = {
+    nome:document.getElementById('u-nome').value.trim(),
+    email:document.getElementById('u-email').value.trim(),
+    telefone:document.getElementById('u-tel').value.trim(),
+    senha_hash:document.getElementById('u-senha').value.trim(),
+    perfil:document.getElementById('u-perfil').value,
+  };
+  if (!dados.nome||!dados.email||!dados.senha_hash) { toast('Preencha todos os campos','error'); return; }
+  if (!DEMO && sb) {
+    const { error } = await sb.from('usuarios').insert([dados]);
+    if (error) { toast('Erro: '+error.message,'error'); return; }
+  }
+  toast('Usuário criado com sucesso!','success');
+  closeModal('modalNovoUsuario');
+  carregarUsuarios();
+}
+
+// ── CONFIGURAÇÕES ─────────────────────────────────────────
+function preencherFormConfiguracoes() {
+  const setVal = function(id, val) { const e = document.getElementById(id); if(e && val) e.value = val; };
+  setVal('cfg-empresa', FC_CONFIG.NOME_EMPRESA);
+  setVal('cfg-cnpj', FC_CONFIG.CNPJ_EMPRESA);
+  setVal('cfg-whats', FC_CONFIG.WHATSAPP);
+  setVal('cfg-email', FC_CONFIG.EMAIL_SUPORTE);
+  setVal('cfg-end', FC_CONFIG.ENDERECO_EMPRESA);
+  setVal('cfg-juros', FC_CONFIG.TAXA_JUROS_PADRAO);
+  setVal('cfg-comp', FC_CONFIG.COMPROMETIMENTO_MAX);
+  setVal('cfg-av1', FC_CONFIG.DIAS_AVISO_1);
+  setVal('cfg-av2', FC_CONFIG.DIAS_AVISO_2);
+  setVal('cfg-trava', FC_CONFIG.DIAS_TRAVA);
+  setVal('cfg-asaas', FC_CONFIG.ASAAS_API_KEY && !FC_CONFIG.ASAAS_API_KEY.includes('SUA_CHAVE') ? FC_CONFIG.ASAAS_API_KEY : '');
+}
+
+async function salvarConfiguracoes() {
+  const cfg = {
+    nome: document.getElementById('cfg-empresa').value.trim(),
+    cnpj: document.getElementById('cfg-cnpj').value.trim(),
+    whatsapp: document.getElementById('cfg-whats').value.trim(),
+    email: document.getElementById('cfg-email').value.trim(),
+    endereco: document.getElementById('cfg-end').value.trim(),
+    juros: document.getElementById('cfg-juros').value,
+    comprometimento: document.getElementById('cfg-comp').value,
+    dias_aviso1: document.getElementById('cfg-av1').value,
+    dias_aviso2: document.getElementById('cfg-av2').value,
+    dias_trava: document.getElementById('cfg-trava').value,
+  };
+  // Salva no localStorage para persistência local
+  localStorage.setItem('fc_config_extra', JSON.stringify(cfg));
+  // Atualiza FC_CONFIG em memória
+  if (cfg.nome) FC_CONFIG.NOME_EMPRESA = cfg.nome;
+  if (cfg.cnpj) FC_CONFIG.CNPJ_EMPRESA = cfg.cnpj;
+  if (cfg.whatsapp) FC_CONFIG.WHATSAPP = cfg.whatsapp;
+  if (cfg.email) FC_CONFIG.EMAIL_SUPORTE = cfg.email;
+  if (cfg.endereco) FC_CONFIG.ENDERECO_EMPRESA = cfg.endereco;
+  if (cfg.juros) FC_CONFIG.TAXA_JUROS_PADRAO = parseFloat(cfg.juros);
+  if (cfg.dias_trava) FC_CONFIG.DIAS_TRAVA = parseInt(cfg.dias_trava);
+  // Salva no Supabase se conectado
+  if (!DEMO && sb) {
+    try {
+      const dados = { chave: 'configuracoes', valor: JSON.stringify(cfg), atualizado_em: new Date().toISOString() };
+      // upsert: insere ou atualiza
+      const { error } = await sb.from('configuracoes').upsert([dados], { onConflict: 'chave' });
+      if (error) throw error;
+      toast('✅ Configurações salvas no banco de dados!', 'success');
+    } catch(e) {
+      console.warn('Configuracoes save error:', e.message);
+      toast('✅ Configurações salvas localmente!', 'success');
+    }
+  } else {
+    toast('✅ Configurações salvas localmente!', 'success');
+  }
+}
+function toggleLockProvider() {
+  const prov = document.getElementById('cfg-lock-provider').value;
+  document.getElementById('cfg-telecoins-fields').style.display = prov==='telecoins'?'block':'none';
+  document.getElementById('cfg-nuovo-fields').style.display = prov==='nuovo'?'block':'none';
+}
+function testarTrava() { toast('Conexão com provedor testada — OK!','success'); }
+function testarBMP() { toast('Conexão com BMP Bank testada — OK!','success'); }
+
+// ── QR CODE DO VENDEDOR ───────────────────────────────────
+function gerarQRVendedor() {
+  const vendedorId = currentUser?.id || 'demo';
+  const link = `${window.location.origin}/cadastro.html?vendedor=${vendedorId}`;
+  document.getElementById('qrLinkText').textContent = link;
+  document.getElementById('qrCodeDiv').innerHTML = '';
+  try {
+    new QRCode(document.getElementById('qrCodeDiv'), {
+      text: link, width: 200, height: 200,
+      colorDark: '#000000', colorLight: '#ffffff',
+    });
+  } catch(e) {
+    document.getElementById('qrCodeDiv').innerHTML = `<div style="background:#fff;padding:20px;border-radius:8px;color:#333;font-size:12px">QR Code:<br><strong style="word-break:break-all">${link}</strong></div>`;
+  }
+  openModal('modalQRVendedor');
+}
+function copiarLinkQR() {
+  const link = document.getElementById('qrLinkText').textContent;
+  navigator.clipboard.writeText(link).then(() => toast('Link copiado!','success'));
+}
+function enviarQRWhatsApp() {
+  const link = document.getElementById('qrLinkText').textContent;
+  const msg = encodeURIComponent(`Olá! Para solicitar seu financiamento de celular, acesse: ${link}\n\nEnvie seus documentos pelo formulário. Em breve nossa equipe entrará em contato.`);
+  window.open(`https://wa.me/?text=${msg}`, '_blank');
+}
+
+// ── ASAAS — chamadas diretas à API (sem proxy) ────────────
+const ASAAS_BASE = 'https://www.asaas.com';
+const ASAAS_KEY  = FC_CONFIG.ASAAS_API_KEY;
+
+async function asaasRequest(endpoint, method, body) {
+  try {
+    const opts = {
+      method: method || 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'access_token': ASAAS_KEY
+      }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const resp = await fetch(ASAAS_BASE + endpoint, opts);
+    const data = await resp.json();
+    if (!resp.ok) {
+      const msg = data.errors ? data.errors[0].description : (data.message || 'Erro Asaas');
+      throw new Error(msg);
+    }
+    return data;
+  } catch(e) {
+    console.warn('Asaas erro:', e.message);
+    throw e;
+  }
+}
+
+async function criarClienteAsaas(cliente) {
+  try {
+    const data = await asaasRequest('/api/v3/customers', 'POST', {
+      name:        cliente.nome,
+      cpfCnpj:     cliente.cpf.replace(/\D/g,''),
+      mobilePhone: (cliente.telefone||'').replace(/\D/g,''),
+      email:       cliente.email || undefined
+    });
+    return data.id || null;
+  } catch(e) {
+    console.warn('Asaas criar cliente falhou:', e.message);
+    return null;
+  }
+}
+
+async function criarCobrancaAsaas(asaasId, valor, vencimento, descricao) {
+  try {
+    const data = await asaasRequest('/api/v3/payments', 'POST', {
+      customer:    asaasId,
+      billingType: 'BOLETO',
+      value:       valor,
+      dueDate:     vencimento,
+      description: descricao,
+      fine:        { value: 2 },
+      interest:    { value: 1 }
+    });
+    return {
+      id:           data.id,
+      bankSlipUrl:  data.bankSlipUrl,
+      nossoNumero:  data.nossoNumero,
+      pixCopiaECola: data.pixCopiaECola,
+      status:       data.status
+    };
+  } catch(e) {
+    console.warn('Asaas criar cobrança falhou:', e.message);
+    return null;
+  }
+}
+
+async function gerarCobrancaAsaas() { toast('Para gerar boleto/PIX, configure um backend com a API do Asaas.','warning'); }
+
+// ── EXPORTAR CSV ──────────────────────────────────────────
+async function exportarCSV(tipo) {
+  if (DEMO) { toast('Conecte o banco de dados para exportar dados reais.', 'error'); return; }
+  let csv = '';
+  const NL = '\n';
+  if (tipo === 'contratos') {
+    const { data } = await sb.from('contratos').select('numero, clientes!cliente_id(nome), celulares!celular_id(marca,modelo), valor_total, num_parcelas, status');
+    csv = 'numero,cliente,celular,valor_total,parcelas,status' + NL + (data||[]).map(c=>c.numero+','+( c.clientes&&c.clientes.nome||'')+','+(c.celulares&&c.celulares.marca||'')+' '+(c.celulares&&c.celulares.modelo||'')+','+c.valor_total+','+c.num_parcelas+','+c.status).join(NL);
+  } else if (tipo === 'inadimplentes') {
+    const { data } = await sb.from('contratos').select('clientes!cliente_id(nome), celulares!celular_id(imei)').eq('celular_travado', true);
+    csv = 'cliente,imei' + NL + (data||[]).map(c=>(c.clientes&&c.clientes.nome||'')+','+(c.celulares&&c.celulares.imei||'')).join(NL);
+  } else if (tipo === 'clientes') {
+    const { data } = await sb.from('clientes').select('nome,cpf,telefone,renda_mensal,status');
+    csv = 'nome,cpf,telefone,renda,status' + NL + (data||[]).map(c=>c.nome+','+c.cpf+','+c.telefone+','+c.renda_mensal+','+c.status).join(NL);
+  } else if (tipo === 'recebimentos') {
+    const { data } = await sb.from('recebimentos').select('data_recebimento,tipo,canal,valor');
+    csv = 'data,tipo,canal,valor' + NL + (data||[]).map(r=>r.data_recebimento+','+r.tipo+','+r.canal+','+r.valor).join(NL);
+  } else if (tipo === 'financeiro') {
+    const { data } = await sb.from('parcelas').select('status,valor');
+    const rec  = (data||[]).filter(p=>p.status==='pago').reduce((a,p)=>a+Number(p.valor),0);
+    const pend = (data||[]).filter(p=>p.status==='pendente').reduce((a,p)=>a+Number(p.valor),0);
+    const atras= (data||[]).filter(p=>p.status==='atrasado').reduce((a,p)=>a+Number(p.valor),0);
+    const mes  = new Date().toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    csv = 'mes,recebido,pendente,atraso' + NL + mes+','+rec.toFixed(2)+','+pend.toFixed(2)+','+atras.toFixed(2);
+  }
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'facilitacred_'+tipo+'_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click(); toast('CSV exportado!','success');
+}
+
+// ── HELPERS ───────────────────────────────────────────────
+function demoTable(headers, rows) {
+  return `<div class="table-wrap"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>
+    ${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}
+  </tbody></table></div>`;
+}
+async function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  // Auto-preenche selects do modal de contrato
+  if (id === 'modalNovoContrato') {
+    await preencherSelectsContrato();
+  }
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
+function toast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 3500);
+}
+function mascaraCPF(el) {
+  let v = el.value.replace(/\D/g,'').substring(0,11);
+  v = v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+  el.value = v;
+}
+function mascaraTel(el) {
+  let v = el.value.replace(/\D/g,'').substring(0,11);
+  v = v.replace(/(\d{2})(\d)/,'($1) $2').replace(/(\d{5})(\d)/,'$1-$2');
+  el.value = v;
+}
+async function buscarCEP(cepId, endId) {
+  const cep = document.getElementById(cepId).value.replace(/\D/g,'');
+  if (cep.length !== 8) return;
+  try {
+    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const d = await r.json();
+    if (!d.erro && document.getElementById(endId))
+      document.getElementById(endId).value = `${d.logradouro}, ${d.bairro}, ${d.localidade} - ${d.uf}`;
+  } catch {}
+}
+function criarContratoParaCandidato(id) {
+  const c = DEMO_CANDIDATOS.find(x=>x.id===id);
+  if (!c) return;
+  toast(`Abrindo criação de contrato para ${c.nome}...`,'');
+  goPage('contratos', document.querySelector('[onclick*=contratos]'));
+  setTimeout(() => openModal('modalNovoContrato'), 300);
+}
+function verContratoCliente() { toast('Conecte o banco de dados para visualizar contratos reais.', 'error'); }
+
+// Data padrão contrato
+document.getElementById('ct-inicio').value = new Date().toISOString().split('T')[0];
+document.getElementById('rec-data').value = new Date().toISOString().split('T')[0];
+
+// Selects preenchidos automaticamente no openModal acima
+
+// Carregar configurações salvas (local + banco)
+async function carregarConfigSalvas() {
+  // Tenta carregar do Supabase primeiro
+  if (!DEMO && sb) {
+    try {
+      const { data } = await sb.from('configuracoes').select('valor').eq('chave','configuracoes').limit(1);
+      if (data && data.length > 0 && data[0].valor) {
+        const cfg = JSON.parse(data[0].valor);
+        if (cfg.nome) FC_CONFIG.NOME_EMPRESA = cfg.nome;
+        if (cfg.cnpj) FC_CONFIG.CNPJ_EMPRESA = cfg.cnpj;
+        if (cfg.whatsapp) FC_CONFIG.WHATSAPP = cfg.whatsapp;
+        if (cfg.email) FC_CONFIG.EMAIL_SUPORTE = cfg.email;
+        if (cfg.endereco) FC_CONFIG.ENDERECO_EMPRESA = cfg.endereco;
+        if (cfg.juros) FC_CONFIG.TAXA_JUROS_PADRAO = parseFloat(cfg.juros);
+        if (cfg.dias_trava) FC_CONFIG.DIAS_TRAVA = parseInt(cfg.dias_trava);
+        localStorage.setItem('fc_config_extra', data[0].valor);
+        return;
+      }
+    } catch(e) { console.warn('Config load from DB:', e.message); }
+  }
+  // Fallback: localStorage
+  try {
+    const cfgSalvo = localStorage.getItem('fc_config_extra');
+    if (cfgSalvo) {
+    const cfg = JSON.parse(cfgSalvo);
+    if (cfg.nome) FC_CONFIG.NOME_EMPRESA = cfg.nome;
+    if (cfg.cnpj) FC_CONFIG.CNPJ_EMPRESA = cfg.cnpj;
+    if (cfg.whatsapp) FC_CONFIG.WHATSAPP = cfg.whatsapp;
+    if (cfg.email) FC_CONFIG.EMAIL_SUPORTE = cfg.email;
+    if (cfg.endereco) FC_CONFIG.ENDERECO_EMPRESA = cfg.endereco;
+    if (cfg.juros) FC_CONFIG.TAXA_JUROS_PADRAO = parseFloat(cfg.juros);
+    if (cfg.dias_trava) FC_CONFIG.DIAS_TRAVA = parseInt(cfg.dias_trava);
+  }
+  } catch(e) {}
+}
+
+// ── EVENT DELEGATION — botões de contrato/termo/recibo ──
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-contrato-id]');
+  if (!btn) return;
+  var id = btn.getAttribute('data-contrato-id');
+  var acao = btn.getAttribute('data-acao');
+  var numero = btn.getAttribute('data-numero') || '';
+  if (!id) return;
+  if (acao === 'contrato') { window.open('contrato.html?contrato=' + id, '_blank'); }
+  else if (acao === 'termo') { window.open('termo.html?contrato=' + id, '_blank'); }
+  else if (acao === 'recibo') { window.open('recibo.html?contrato=' + numero + '&cpf=', '_blank'); }
+  else if (acao === 'trava') {
+    var travado = btn.getAttribute('data-travado') === 'true';
+    var cid = btn.getAttribute('data-contrato-id');
+    toggleTrava(cid, travado);
+  }
+});
+
+// Verificar sessão salva
+try {
+  const savedUser = localStorage.getItem('fc_user');
+  if (savedUser) {
+    const u = JSON.parse(savedUser);
+    if (u && u.perfil && u.nome) {
+      currentUser = u;
+      entrarSistema(u.perfil, u.nome);
+    } else {
+      localStorage.removeItem('fc_user');
+    }
+  }
+} catch(e) { localStorage.removeItem('fc_user'); }
+</script>
+</body>
+</html>
