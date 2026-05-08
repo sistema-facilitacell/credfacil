@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FACILITA CELL — Portal do Vendedor</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0A0A0A;--bg2:#111;--bg3:#181818;--bg4:#222;--bg5:#2A2A2A;
+  --orange:#E8650A;--orange2:#FF8C35;--orange-dim:rgba(232,101,10,0.12);
+  --white:#F4F4EE;--gray:#888;--gray2:#555;--gray3:#333;
+  --green:#1DB954;--red:#E74C3C;--yellow:#F39C12;
+  --border:#262626;--radius:10px;
+  --font-head:'Syne',sans-serif;--font-body:'DM Sans',sans-serif;
+}
+body{background:var(--bg);color:var(--white);font-family:var(--font-body);font-size:14px;min-height:100vh}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:3px}
+
+/* ── CONFIG inline ── */
+/* Copie suas credenciais do Supabase aqui */
+
+/* ── TELA DE CADASTRO (pública) ── */
+#telaPublica{display:flex;min-height:100vh;align-items:center;justify-content:center;background:var(--bg);background-image:radial-gradient(ellipse at 20% 50%,rgba(232,101,10,0.09) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(232,101,10,0.05) 0%,transparent 50%)}
+#telaAdmin{display:none;min-height:100vh}
+
+/* ── FORMULÁRIO DE CADASTRO ── */
+.cadastro-box{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:44px;width:100%;max-width:520px;animation:fadeUp .4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.logo{text-align:center;margin-bottom:32px}
+.logo h1{font-family:var(--font-head);font-size:30px;font-weight:800;color:var(--orange);letter-spacing:4px}
+.logo p{color:var(--gray);font-size:12px;margin-top:6px;letter-spacing:1px}
+.logo .sub{font-size:11px;color:var(--gray2);margin-top:4px}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-row.single{grid-template-columns:1fr}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:10px;color:var(--gray);margin-bottom:6px;font-family:var(--font-head);letter-spacing:1.5px;text-transform:uppercase}
+.field input,.field select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--white);font-size:13px;font-family:var(--font-body);transition:.2s}
+.field input:focus,.field select:focus{outline:none;border-color:var(--orange);background:var(--bg4)}
+.field input::placeholder{color:var(--gray2)}
+
+.btn-primary{width:100%;padding:14px;background:var(--orange);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;font-family:var(--font-head);letter-spacing:1.5px;cursor:pointer;transition:.2s;margin-top:4px}
+.btn-primary:hover{background:var(--orange2);transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+.msg-box{border-radius:9px;padding:14px 16px;font-size:13px;margin-bottom:16px;display:none}
+.msg-box.erro{background:rgba(231,76,60,.12);border:1px solid rgba(231,76,60,.3);color:var(--red)}
+.msg-box.sucesso{background:rgba(29,185,84,.12);border:1px solid rgba(29,185,84,.3);color:var(--green)}
+.msg-box.aviso{background:rgba(243,156,18,.12);border:1px solid rgba(243,156,18,.3);color:var(--yellow)}
+
+.step-bar{display:flex;gap:8px;margin-bottom:28px}
+.step{flex:1;height:3px;border-radius:2px;background:var(--bg5);transition:.4s}
+.step.ativo{background:var(--orange)}
+.step.feito{background:var(--green)}
+
+.status-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-family:var(--font-head);font-weight:600;letter-spacing:.5px}
+.status-badge.pendente{background:rgba(243,156,18,.15);color:var(--yellow);border:1px solid rgba(243,156,18,.3)}
+.status-badge.ativo{background:rgba(29,185,84,.15);color:var(--green);border:1px solid rgba(29,185,84,.3)}
+.status-badge.inativo{background:rgba(136,136,136,.15);color:var(--gray);border:1px solid var(--border)}
+.status-badge.reprovado{background:rgba(231,76,60,.15);color:var(--red);border:1px solid rgba(231,76,60,.3)}
+
+/* ── PAINEL ADMIN ── */
+.sidebar{position:fixed;left:0;top:0;width:240px;height:100vh;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100}
+.sidebar-logo{padding:22px 20px;border-bottom:1px solid var(--border)}
+.sidebar-logo h2{font-family:var(--font-head);font-size:20px;font-weight:800;color:var(--orange);letter-spacing:3px}
+.sidebar-logo p{font-size:10px;color:var(--gray);margin-top:2px}
+.sidebar-nav{flex:1;padding:10px 0;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;cursor:pointer;color:var(--gray);font-size:13px;transition:.15s;border-left:2px solid transparent}
+.nav-item:hover{background:var(--orange-dim);color:var(--white);border-left-color:var(--border)}
+.nav-item.active{background:var(--orange-dim);color:var(--orange);border-left-color:var(--orange);font-weight:500}
+.nav-item .ic{font-size:16px;width:22px;text-align:center}
+.nav-badge{margin-left:auto;background:var(--orange);color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;font-weight:700;font-family:var(--font-head)}
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border)}
+.btn-logout{width:100%;padding:9px;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--gray);font-size:12px;cursor:pointer;transition:.2s}
+.btn-logout:hover{border-color:var(--red);color:var(--red)}
+
+.topbar{position:fixed;top:0;left:240px;right:0;height:58px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:99}
+.topbar-title{font-family:var(--font-head);font-size:15px;font-weight:700;letter-spacing:.5px}
+.user-chip{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:5px 14px 5px 5px}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+
+.main{margin-left:240px;padding-top:58px;min-height:100vh}
+.page{display:none;padding:24px;animation:fadeIn .2s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-family:var(--font-head);font-size:14px;font-weight:700;color:var(--orange);margin-bottom:16px;letter-spacing:.5px}
+
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden;transition:.2s}
+.stat-card:hover{border-color:var(--orange);transform:translateY(-2px)}
+.stat-card::before{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:.06;background:var(--orange)}
+.stat-label{font-size:10px;color:var(--gray);font-family:var(--font-head);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
+.stat-value{font-size:26px;font-weight:700;font-family:var(--font-head);line-height:1}
+.stat-sub{font-size:11px;color:var(--gray);margin-top:4px}
+.orange{color:var(--orange)}.green{color:var(--green)}.red{color:var(--red)}.yellow{color:var(--yellow)}
+
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:10px;color:var(--gray);font-family:var(--font-head);letter-spacing:1.5px;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid var(--border)}
+td{padding:12px;border-bottom:1px solid var(--bg3);font-size:12.5px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;font-family:var(--font-head);cursor:pointer;border:none;transition:.2s;letter-spacing:.3px}
+.btn:hover{opacity:.85;transform:translateY(-1px)}
+.btn.primary{background:var(--orange);color:#fff}
+.btn.green{background:var(--green);color:#fff}
+.btn.red{background:var(--red);color:#fff}
+.btn.ghost{background:transparent;border:1px solid var(--border);color:var(--gray)}
+.btn.ghost:hover{border-color:var(--orange);color:var(--orange)}
+.btn.sm{padding:5px 10px;font-size:11px}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:28px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;animation:fadeUp .25s ease}
+.modal-title{font-family:var(--font-head);font-size:16px;font-weight:700;color:var(--orange);margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+.modal-title button{background:transparent;border:none;color:var(--gray);font-size:20px;cursor:pointer;line-height:1}
+.modal-title button:hover{color:var(--white)}
+
+.qr-box{text-align:center;padding:20px}
+.qr-box canvas,.qr-box img{border-radius:8px;border:4px solid white;margin-bottom:12px}
+.qr-url{font-size:11px;color:var(--gray);word-break:break-all;margin-top:8px;background:var(--bg3);padding:8px 12px;border-radius:6px}
+
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg4);border:1px solid var(--border);border-radius:9px;padding:12px 20px;font-size:13px;z-index:999;transform:translateY(20px);opacity:0;transition:.3s;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-color:var(--green);color:var(--green)}
+.toast.error{border-color:var(--red);color:var(--red)}
+
+.vendedor-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;transition:.2s}
+.vendedor-card:hover{border-color:var(--orange)}
+.vendedor-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--orange2));display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:16px;font-weight:700;color:#fff;flex-shrink:0}
+.vendedor-info{flex:1}
+.vendedor-nome{font-family:var(--font-head);font-size:14px;font-weight:700}
+.vendedor-det{font-size:11px;color:var(--gray);margin-top:3px}
+.vendedor-meta{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+
+.empty{text-align:center;padding:40px 20px;color:var(--gray)}
+.empty .emoji{font-size:40px;margin-bottom:12px}
+.empty p{font-size:13px}
+
+/* ── VENDEDOR LOGADO: portal de vendas ── */
+.venda-form{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.venda-resultado{background:var(--bg3);border:1px solid var(--green);border-radius:var(--radius);padding:20px;display:none;margin-top:16px}
+.venda-resultado h3{font-family:var(--font-head);font-size:16px;color:var(--green);margin-bottom:14px}
+.info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bg4);font-size:13px}
+.info-row:last-child{border-bottom:none}
+.info-row .label{color:var(--gray)}
+.info-row .val{font-weight:600;font-family:var(--font-head)}
+
+@media(max-width:700px){
+  .sidebar{display:none}
+  .main,.topbar{margin-left:0;left:0}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .form-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TELA PÚBLICA — CADASTRO DO VENDEDOR
+═══════════════════════════════════════════════════════════ -->
+<div id="telaPublica">
+  <div class="cadastro-box" id="boxCadastro">
+    <div class="logo">
+      <h1>FACILITA CELL</h1>
+      <p>PORTAL DO VENDEDOR</p>
+      <div class="sub">Cadastre-se para começar a vender</div>
+    </div>
+
+    <div class="step-bar">
+      <div class="step ativo" id="st1"></div>
+      <div class="step" id="st2"></div>
+      <div class="step" id="st3"></div>
+    </div>
+
+    <!-- Passo 1: dados pessoais -->
+    <div id="passo1">
+      <div class="msg-box" id="erroCad"></div>
+      <div class="form-row">
+        <div class="field"><label>Nome completo *</label><input id="v-nome" type="text" placeholder="Seu nome"/></div>
+        <div class="field"><label>CPF *</label><input id="v-cpf" type="text" placeholder="000.000.000-00" oninput="mascCPF(this)"/></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>WhatsApp *</label><input id="v-tel" type="text" placeholder="(45) 99999-9999" oninput="mascTel(this)"/></div>
+        <div class="field"><label>E-mail</label><input id="v-email" type="email" placeholder="email@exemplo.com"/></div>
+      </div>
+      <div class="form-row single">
+        <div class="field"><label>Cidade / UF *</label><input id="v-cidade" type="text" placeholder="Foz do Iguaçu – PR"/></div>
+      </div>
+      <button class="btn-primary" onclick="irPasso2()">Continuar →</button>
+    </div>
+
+    <!-- Passo 2: senha -->
+    <div id="passo2" style="display:none">
+      <div class="msg-box" id="erroPasso2"></div>
+      <div class="field"><label>Criar senha *</label><input id="v-senha" type="password" placeholder="Mínimo 6 caracteres"/></div>
+      <div class="field"><label>Confirmar senha *</label><input id="v-senha2" type="password" placeholder="Repita a senha"/></div>
+      <div class="field"><label>Como soube da FACILITA CELL?</label>
+        <select id="v-origem">
+          <option value="">Selecione...</option>
+          <option value="indicacao">Indicação de amigo/colega</option>
+          <option value="instagram">Instagram / Redes sociais</option>
+          <option value="google">Google / Internet</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="finalizarCadastro()">Enviar cadastro ✓</button>
+      <button class="btn ghost" style="width:100%;margin-top:8px" onclick="voltarPasso1()">← Voltar</button>
+    </div>
+
+    <!-- Passo 3: aguardando aprovação -->
+    <div id="passo3" style="display:none;text-align:center;padding:10px 0">
+      <div style="font-size:50px;margin-bottom:16px">⏳</div>
+      <h2 style="font-family:var(--font-head);font-size:20px;color:var(--orange);margin-bottom:10px">Cadastro enviado!</h2>
+      <p style="color:var(--gray);font-size:13px;line-height:1.6">Seu cadastro foi recebido. O administrador irá analisá-lo e você receberá uma confirmação. Enquanto isso, você já pode <strong>fazer login</strong> para acompanhar o status.</p>
+      <button class="btn-primary" style="margin-top:20px;max-width:240px" onclick="irLogin()">Fazer login →</button>
+    </div>
+  </div>
+
+  <!-- Login do vendedor -->
+  <div class="cadastro-box" id="boxLogin" style="display:none">
+    <div class="logo">
+      <h1>FACILITA CELL</h1>
+      <p>LOGIN DO VENDEDOR</p>
+    </div>
+    <div class="msg-box" id="erroLogin"></div>
+    <div class="field"><label>E-mail ou CPF</label><input id="l-user" type="text" placeholder="seu@email.com ou 000.000.000-00"/></div>
+    <div class="field"><label>Senha</label><input id="l-senha" type="password" placeholder="••••••"/></div>
+    <button class="btn-primary" onclick="fazerLogin()">Entrar →</button>
+    <div style="text-align:center;margin-top:16px">
+      <a href="#" onclick="mostrarCadastro()" style="color:var(--orange);font-size:12px;text-decoration:none">Ainda não tem conta? Cadastre-se</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAINEL ADMIN — GESTÃO DE VENDEDORES
+═══════════════════════════════════════════════════════════ -->
+<div id="telaAdmin">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <h2>FACILITA CELL</h2>
+      <p>GESTÃO DE VENDEDORES</p>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-item active" onclick="goPage('pendentes',this)"><span class="ic">⏳</span> Pendentes <span class="nav-badge" id="badgePend">0</span></div>
+      <div class="nav-item" onclick="goPage('ativos',this)"><span class="ic">✅</span> Ativos</div>
+      <div class="nav-item" onclick="goPage('todos',this)"><span class="ic">👥</span> Todos</div>
+      <div class="nav-item" onclick="goPage('ranking',this)"><span class="ic">🏆</span> Ranking</div>
+      <div class="nav-item" onclick="goPage('novoAdmin',this)"><span class="ic">➕</span> Novo Vendedor</div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="btn-logout" onclick="logoutAdmin()">↩ Voltar ao Admin</div>
+    </div>
+  </div>
+
+  <div class="topbar">
+    <div class="topbar-title" id="pageTitle">⏳ Cadastros Pendentes</div>
+    <div class="user-chip">
+      <div class="avatar" id="adminAvatar">A</div>
+      <div><span id="adminNome">Admin</span><small id="adminRole">admin</small></div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- Stats -->
+    <div style="padding:24px 24px 0">
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Total Vendedores</div><div class="stat-value orange" id="st-total">—</div><div class="stat-sub">cadastrados</div></div>
+        <div class="stat-card"><div class="stat-label">Pendentes</div><div class="stat-value yellow" id="st-pend">—</div><div class="stat-sub">aguardando aprovação</div></div>
+        <div class="stat-card"><div class="stat-label">Ativos</div><div class="stat-value green" id="st-ativos">—</div><div class="stat-sub">aprovados</div></div>
+        <div class="stat-card"><div class="stat-label">Contratos do Mês</div><div class="stat-value orange" id="st-contratos">—</div><div class="stat-sub">via vendedores</div></div>
+      </div>
+    </div>
+
+    <!-- Pendentes -->
+    <div class="page active" id="page-pendentes">
+      <div class="card">
+        <div class="card-title">⏳ Cadastros aguardando aprovação</div>
+        <div id="lista-pendentes"><div class="empty"><div class="emoji">🎉</div><p>Nenhum pendente no momento</p></div></div>
+      </div>
+    </div>
+
+    <!-- Ativos -->
+    <div class="page" id="page-ativos">
+      <div class="card">
+        <div class="card-title">✅ Vendedores ativos</div>
+        <div id="lista-ativos"><div class="empty"><div class="emoji">👥</div><p>Nenhum vendedor ativo ainda</p></div></div>
+      </div>
+    </div>
+
+    <!-- Todos -->
+    <div class="page" id="page-todos">
+      <div class="card">
+        <div class="card-title">👥 Todos os vendedores</div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Nome</th><th>CPF</th><th>WhatsApp</th><th>Cidade</th><th>Status</th><th>Desde</th><th>Ações</th></tr></thead>
+          <tbody id="tabela-todos"><tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">Carregando...</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- Ranking -->
+    <div class="page" id="page-ranking">
+      <div class="card">
+        <div class="card-title">🏆 Ranking de Vendedores — Contratos fechados</div>
+        <div id="lista-ranking"><div class="empty"><div class="emoji">📊</div><p>Dados de contratos aparecerão aqui</p></div></div>
+      </div>
+    </div>
+
+    <!-- Novo Vendedor (admin cria direto) -->
+    <div class="page" id="page-novoAdmin">
+      <div class="card" style="max-width:600px">
+        <div class="card-title">➕ Cadastrar vendedor (admin)</div>
+        <div class="msg-box" id="erroNovoAdmin"></div>
+        <div class="form-row">
+          <div class="field"><label>Nome *</label><input id="na-nome" type="text"/></div>
+          <div class="field"><label>CPF *</label><input id="na-cpf" type="text" oninput="mascCPF(this)"/></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>WhatsApp *</label><input id="na-tel" type="text" oninput="mascTel(this)"/></div>
+          <div class="field"><label>E-mail</label><input id="na-email" type="email"/></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Cidade / UF</label><input id="na-cidade" type="text"/></div>
+          <div class="field"><label>Senha inicial *</label><input id="na-senha" type="text" placeholder="Mínimo 6 caracteres"/></div>
+        </div>
+        <div class="form-row single">
+          <div class="field"><label>Status inicial</label>
+            <select id="na-status">
+              <option value="ativo">Ativo (aprovado)</option>
+              <option value="pendente">Pendente (aguardando aprovação)</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn primary" onclick="salvarNovoVendedor()">✓ Cadastrar vendedor</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal: detalhes do vendedor -->
+<div class="modal-overlay" id="modalVendedor">
+  <div class="modal">
+    <div class="modal-title"><span>👤 Detalhes do Vendedor</span><button onclick="fecharModal('modalVendedor')">×</button></div>
+    <div id="detalheVendedor"></div>
+    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap" id="acoesVendedor"></div>
+  </div>
+</div>
+
+<!-- Modal: QR Code do vendedor -->
+<div class="modal-overlay" id="modalQR">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title"><span>📲 QR Code do Vendedor</span><button onclick="fecharModal('modalQR')">×</button></div>
+    <div class="qr-box">
+      <div id="qrContainer"></div>
+      <p style="font-size:13px;color:var(--white);margin-bottom:6px;font-family:var(--font-head)" id="qrNome"></p>
+      <div class="qr-url" id="qrUrl"></div>
+      <button class="btn primary" style="margin-top:14px;width:100%" onclick="copiarLink()">📋 Copiar link de cadastro</button>
+      <p style="font-size:11px;color:var(--gray);margin-top:8px">O cliente escaneia este QR Code e o cadastro fica vinculado ao vendedor</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIGURAÇÃO — altere com suas credenciais
+// ══════════════════════════════════════════════
+const CONF = {
+  SUPABASE_URL:      'https://lgtnarralybqkevsrczn.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxndG5hcnJhbHlicWtldnNyY3puIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NDY5NTIsImV4cCI6MjA5MjEyMjk1Mn0.7wClczE45DQIXObEQDXvljhZIBLXuS8a0tUmTe9xtZQ',
+  BASE_URL: window.location.origin, // URL do site
+};
+
+// ── SUPABASE INIT ──
+let sb = null;
+try {
+  const { createClient } = supabase;
+  if (!CONF.SUPABASE_URL.includes('SEU_PROJETO')) {
+    sb = createClient(CONF.SUPABASE_URL, CONF.SUPABASE_ANON_KEY);
+  }
+} catch(e) {}
+
+// ══════════════════════════════════════════════
+// ESTADO
+// ══════════════════════════════════════════════
+let currentUser = null;
+let dadosCadastro = {};
+let vendedorSelecionado = null;
+
+// ══════════════════════════════════════════════
+// INICIALIZAÇÃO
+// ══════════════════════════════════════════════
+window.onload = async () => {
+  const salvo = sessionStorage.getItem('fc_vendedor');
+  if (salvo) {
+    currentUser = JSON.parse(salvo);
+    if (currentUser.perfil === 'admin') {
+      mostrarAdmin();
+    } else {
+      mostrarPortalVendedor();
+    }
+  } else {
+    // Verificar se veio via URL com modo=login
+    const p = new URLSearchParams(location.search);
+    if (p.get('modo') === 'login') irLogin();
+  }
+};
+
+// ══════════════════════════════════════════════
+// CADASTRO PÚBLICO
+// ══════════════════════════════════════════════
+function irPasso2() {
+  const nome = document.getElementById('v-nome').value.trim();
+  const cpf  = document.getElementById('v-cpf').value.trim();
+  const tel  = document.getElementById('v-tel').value.trim();
+  const cidade = document.getElementById('v-cidade').value.trim();
+  const err  = document.getElementById('erroCad');
+
+  if (!nome || !cpf || !tel || !cidade) {
+    mostrarErro(err, 'Preencha todos os campos obrigatórios (*).');
+    return;
+  }
+  if (cpf.replace(/\D/g,'').length < 11) {
+    mostrarErro(err, 'CPF inválido — deve ter 11 dígitos.');
+    return;
+  }
+  dadosCadastro = { nome, cpf: cpf.replace(/\D/g,''), telefone: tel, cidade, email: document.getElementById('v-email').value.trim() };
+  err.style.display = 'none';
+  document.getElementById('passo1').style.display = 'none';
+  document.getElementById('passo2').style.display = 'block';
+  document.getElementById('st2').classList.add('ativo');
+}
+
+function voltarPasso1() {
+  document.getElementById('passo2').style.display = 'none';
+  document.getElementById('passo1').style.display = 'block';
+  document.getElementById('st2').classList.remove('ativo');
+}
+
+async function finalizarCadastro() {
+  const senha  = document.getElementById('v-senha').value;
+  const senha2 = document.getElementById('v-senha2').value;
+  const origem = document.getElementById('v-origem').value;
+  const err    = document.getElementById('erroPasso2');
+
+  if (senha.length < 6) { mostrarErro(err, 'A senha deve ter pelo menos 6 caracteres.'); return; }
+  if (senha !== senha2)  { mostrarErro(err, 'As senhas não coincidem.'); return; }
+
+  const btn = document.querySelector('#passo2 .btn-primary');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+
+  if (!sb) {
+    // modo sem banco: simular
+    await new Promise(r => setTimeout(r, 1000));
+    concluirCadastro();
+    return;
+  }
+
+  // Verificar se CPF já existe
+  const { data: existeArr } = await sb.from('vendedores').select('id').eq('cpf', dadosCadastro.cpf).limit(1);
+  const existe = existeArr && existeArr.length > 0 ? existeArr[0] : null;
+  if (existe) { mostrarErro(err, 'Este CPF já está cadastrado. Faça login.'); btn.disabled = false; btn.textContent = 'Enviar cadastro ✓'; return; }
+
+  const { error } = await sb.from('vendedores').insert({
+    ...dadosCadastro,
+    senha_hash: senha,
+    origem: origem || 'outro',
+    status: 'pendente',
+  });
+
+  if (error) { mostrarErro(err, 'Erro ao enviar cadastro. Tente novamente.'); btn.disabled = false; btn.textContent = 'Enviar cadastro ✓'; return; }
+  concluirCadastro();
+}
+
+function concluirCadastro() {
+  document.getElementById('passo2').style.display = 'none';
+  document.getElementById('passo3').style.display = 'block';
+  document.getElementById('st2').classList.add('feito');
+  document.getElementById('st3').classList.add('ativo');
+}
+
+// ══════════════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════════════
+function irLogin() {
+  document.getElementById('boxCadastro').style.display = 'none';
+  document.getElementById('boxLogin').style.display = 'block';
+}
+function mostrarCadastro() {
+  document.getElementById('boxLogin').style.display = 'none';
+  document.getElementById('boxCadastro').style.display = 'block';
+}
+
+async function fazerLogin() {
+  const user  = document.getElementById('l-user').value.trim().toLowerCase();
+  const senha = document.getElementById('l-senha').value;
+  const err   = document.getElementById('erroLogin');
+  if (!user || !senha) { mostrarErro(err, 'Preencha e-mail/CPF e senha.'); return; }
+
+  const btn = document.querySelector('#boxLogin .btn-primary');
+  btn.disabled = true; btn.textContent = 'Entrando...';
+
+  if (!sb) {
+    // modo demo: login admin
+    const adminsDemo = ['admin', 'admin@facilitacred.com', 'admin@facilitacell.com'];
+    if (adminsDemo.includes(user) && senha === 'Admin@2026!') {
+      currentUser = { nome:'Administrador', perfil:'admin', email:'admin@facilitacred.com' };
+      sessionStorage.setItem('fc_vendedor', JSON.stringify(currentUser));
+      mostrarAdmin();
+    } else {
+      mostrarErro(err, 'Banco não configurado. Use admin@facilitacred.com / Admin@2026!');
+    }
+    btn.disabled = false; btn.textContent = 'Entrar →';
+    return;
+  }
+
+  try {
+    // Tentar como admin na tabela usuarios
+    const isEmail = user.includes('@');
+    const query = sb.from('usuarios').select('*');
+    if (isEmail) query.eq('email', user);
+    else query.eq('telefone', user.replace(/\D/g,''));
+    const { data: admLista } = await query.eq('senha_hash', senha).limit(1);
+    const adm = admLista && admLista.length > 0 ? admLista[0] : null;
+
+    if (adm && (adm.ativo === true || adm.ativo === null || adm.ativo === undefined)) {
+      currentUser = { ...adm, perfil: adm.perfil };
+      sessionStorage.setItem('fc_vendedor', JSON.stringify(currentUser));
+      btn.disabled = false; btn.textContent = 'Entrar →';
+      adm.perfil === 'admin' ? mostrarAdmin() : mostrarPortalVendedor();
+      return;
+    }
+
+    // Tentar como vendedor
+    const cpfNumeros = user.replace(/\D/g,'');
+    const queryV = sb.from('vendedores').select('*');
+    if (isEmail) queryV.eq('email', user);
+    else queryV.eq('cpf', cpfNumeros);
+    const { data: vendLista } = await queryV.eq('senha_hash', senha).limit(1);
+    const vend = vendLista && vendLista.length > 0 ? vendLista[0] : null;
+
+    if (vend) {
+      currentUser = { ...vend, perfil: 'vendedor' };
+      sessionStorage.setItem('fc_vendedor', JSON.stringify(currentUser));
+      btn.disabled = false; btn.textContent = 'Entrar →';
+      mostrarPortalVendedor();
+      return;
+    }
+
+    mostrarErro(err, 'E-mail/CPF ou senha incorretos. Tente novamente.');
+  } catch(e) {
+    console.error('Erro login:', e);
+    mostrarErro(err, 'Erro ao conectar. Tente novamente.');
+  }
+  btn.disabled = false; btn.textContent = 'Entrar →';
+}
+
+// ══════════════════════════════════════════════
+// TELA ADMIN
+// ══════════════════════════════════════════════
+function mostrarAdmin() {
+  document.getElementById('telaPublica').style.display = 'none';
+  document.getElementById('telaAdmin').style.display = 'block';
+  document.getElementById('adminNome').textContent = currentUser.nome;
+  document.getElementById('adminRole').textContent = currentUser.perfil;
+  document.getElementById('adminAvatar').textContent = currentUser.nome.charAt(0).toUpperCase();
+  carregarStats();
+  carregarPendentes();
+}
+
+async function carregarStats() {
+  if (!sb) { document.getElementById('st-total').textContent = '0'; document.getElementById('st-pend').textContent = '0'; document.getElementById('st-ativos').textContent = '0'; document.getElementById('st-contratos').textContent = '0'; return; }
+  const [todos, pendentes, ativos, contratos] = await Promise.all([
+    sb.from('vendedores').select('id', {count:'exact',head:true}),
+    sb.from('vendedores').select('id', {count:'exact',head:true}).eq('status','pendente'),
+    sb.from('vendedores').select('id', {count:'exact',head:true}).eq('status','ativo'),
+    sb.from('contratos').select('id', {count:'exact',head:true}).not('vendedor_id','is',null),
+  ]);
+  document.getElementById('st-total').textContent = todos.count || 0;
+  document.getElementById('st-pend').textContent  = pendentes.count || 0;
+  document.getElementById('st-ativos').textContent = ativos.count || 0;
+  document.getElementById('st-contratos').textContent = contratos.count || 0;
+  document.getElementById('badgePend').textContent = pendentes.count || 0;
+}
+
+async function carregarPendentes() {
+  const el = document.getElementById('lista-pendentes');
+  if (!sb) { el.innerHTML = '<div class="msg-box aviso" style="display:block">Configure o Supabase para ver os cadastros.</div>'; return; }
+  const { data } = await sb.from('vendedores').select('*').eq('status','pendente').order('criado_em',{ascending:false});
+  if (!data?.length) { el.innerHTML = '<div class="empty"><div class="emoji">🎉</div><p>Nenhum cadastro pendente</p></div>'; return; }
+  el.innerHTML = data.map(v => vendedorCard(v, true)).join('');
+}
+
+async function carregarAtivos() {
+  const el = document.getElementById('lista-ativos');
+  if (!sb) { el.innerHTML = '<div class="msg-box aviso" style="display:block">Configure o Supabase.</div>'; return; }
+  const { data } = await sb.from('vendedores').select('*').eq('status','ativo').order('nome');
+  if (!data?.length) { el.innerHTML = '<div class="empty"><div class="emoji">👥</div><p>Nenhum vendedor ativo ainda</p></div>'; return; }
+  el.innerHTML = data.map(v => vendedorCard(v, false)).join('');
+}
+
+async function carregarTodos() {
+  const tbody = document.getElementById('tabela-todos');
+  if (!sb) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray)">Configure o Supabase.</td></tr>'; return; }
+  const { data } = await sb.from('vendedores').select('*').order('criado_em',{ascending:false});
+  if (!data?.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">Nenhum vendedor cadastrado</td></tr>'; return; }
+  tbody.innerHTML = data.map(v => `<tr>
+    <td><strong>${v.nome}</strong></td>
+    <td>${formatCPF(v.cpf)}</td>
+    <td>${v.telefone || '—'}</td>
+    <td>${v.cidade || '—'}</td>
+    <td>${badgeStatus(v.status)}</td>
+    <td>${new Date(v.criado_em).toLocaleDateString('pt-BR')}</td>
+    <td style="display:flex;gap:6px">
+      <button class="btn ghost sm" onclick="verVendedor('${v.id}')">Ver</button>
+      <button class="btn primary sm" onclick="gerarQR('${v.id}','${v.nome}')">QR</button>
+    </td>
+  </tr>`).join('');
+}
+
+async function carregarRanking() {
+  const el = document.getElementById('lista-ranking');
+  if (!sb) { el.innerHTML = '<div class="msg-box aviso" style="display:block">Configure o Supabase.</div>'; return; }
+  const { data } = await sb.from('contratos').select('vendedor_id, vendedores(nome)');
+  if (!data?.length) { el.innerHTML = '<div class="empty"><div class="emoji">📊</div><p>Nenhum contrato registrado ainda</p></div>'; return; }
+  const rank = {};
+  data.forEach(c => {
+    const id = c.vendedor_id;
+    if (!id) return;
+    rank[id] = rank[id] || { nome: c.vendedores?.nome || 'Desconhecido', total: 0 };
+    rank[id].total++;
+  });
+  const sorted = Object.entries(rank).sort((a,b) => b[1].total - a[1].total);
+  el.innerHTML = sorted.map(([id, v], i) => `
+    <div class="vendedor-card">
+      <div class="vendedor-avatar" style="background:${i===0?'var(--yellow)':i===1?'var(--gray)':i===2?'#cd7f32':'var(--orange)'}">${i+1}</div>
+      <div class="vendedor-info">
+        <div class="vendedor-nome">${v.nome}</div>
+        <div class="vendedor-det">${v.total} contrato${v.total!==1?'s':''} fechado${v.total!==1?'s':''}</div>
+      </div>
+      ${i===0?'<span style="font-size:24px">🏆</span>':i===1?'<span style="font-size:24px">🥈</span>':i===2?'<span style="font-size:24px">🥉</span>':''}
+    </div>`).join('');
+}
+
+function vendedorCard(v, comAcoes) {
+  return `<div class="vendedor-card">
+    <div class="vendedor-avatar">${v.nome.charAt(0).toUpperCase()}</div>
+    <div class="vendedor-info">
+      <div class="vendedor-nome">${v.nome}</div>
+      <div class="vendedor-det">${formatCPF(v.cpf)} • ${v.telefone || ''} • ${v.cidade || ''}</div>
+      <div class="vendedor-meta">
+        ${badgeStatus(v.status)}
+        <span style="font-size:10px;color:var(--gray)">Cadastro: ${new Date(v.criado_em).toLocaleDateString('pt-BR')}</span>
+        ${v.origem ? `<span style="font-size:10px;color:var(--gray)">via ${v.origem}</span>` : ''}
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap">
+      ${comAcoes ? `
+        <button class="btn green sm" onclick="aprovarVendedor('${v.id}')">✓ Aprovar</button>
+        <button class="btn red sm" onclick="reprovarVendedor('${v.id}')">✗ Reprovar</button>
+      ` : `
+        <button class="btn primary sm" onclick="gerarQR('${v.id}','${encodeURIComponent(v.nome)}')">📲 QR</button>
+        <button class="btn ghost sm" onclick="verVendedor('${v.id}')">Ver</button>
+        ${v.status==='ativo' ? `<button class="btn red sm" onclick="inativarVendedor('${v.id}')">Inativar</button>` : `<button class="btn green sm" onclick="aprovarVendedor('${v.id}')">Reativar</button>`}
+      `}
+    </div>
+  </div>`;
+}
+
+async function aprovarVendedor(id) {
+  if (!sb) { toast('Banco não configurado','error'); return; }
+  const { error } = await sb.from('vendedores').update({ status: 'ativo', aprovado_em: new Date().toISOString(), aprovado_por: currentUser.id }).eq('id', id);
+  if (error) { toast('Erro ao aprovar','error'); return; }
+  toast('Vendedor aprovado! ✓','success');
+  carregarPendentes(); carregarStats(); carregarAtivos();
+}
+
+async function reprovarVendedor(id) {
+  if (!sb) { toast('Banco não configurado','error'); return; }
+  await sb.from('vendedores').update({ status: 'reprovado' }).eq('id', id);
+  toast('Cadastro reprovado','error');
+  carregarPendentes(); carregarStats();
+}
+
+async function inativarVendedor(id) {
+  if (!sb) { toast('Banco não configurado','error'); return; }
+  await sb.from('vendedores').update({ status: 'inativo' }).eq('id', id);
+  toast('Vendedor inativado');
+  carregarAtivos(); carregarStats();
+}
+
+async function verVendedor(id) {
+  if (!sb) { toast('Banco não configurado','error'); return; }
+  const { data: vArr } = await sb.from('vendedores').select('*').eq('id', id).limit(1);
+  const v = vArr && vArr.length > 0 ? vArr[0] : null;
+  if (!v) return;
+  vendedorSelecionado = v;
+  const { data: contratos } = await sb.from('contratos').select('id').eq('vendedor_id', id);
+  document.getElementById('detalheVendedor').innerHTML = `
+    <div class="info-row"><span class="label">Nome</span><span class="val">${v.nome}</span></div>
+    <div class="info-row"><span class="label">CPF</span><span class="val">${formatCPF(v.cpf)}</span></div>
+    <div class="info-row"><span class="label">WhatsApp</span><span class="val">${v.telefone || '—'}</span></div>
+    <div class="info-row"><span class="label">E-mail</span><span class="val">${v.email || '—'}</span></div>
+    <div class="info-row"><span class="label">Cidade</span><span class="val">${v.cidade || '—'}</span></div>
+    <div class="info-row"><span class="label">Status</span><span class="val">${badgeStatus(v.status)}</span></div>
+    <div class="info-row"><span class="label">Cadastrado em</span><span class="val">${new Date(v.criado_em).toLocaleString('pt-BR')}</span></div>
+    ${v.aprovado_em ? `<div class="info-row"><span class="label">Aprovado em</span><span class="val">${new Date(v.aprovado_em).toLocaleString('pt-BR')}</span></div>` : ''}
+    <div class="info-row"><span class="label">Contratos fechados</span><span class="val orange">${contratos?.length || 0}</span></div>
+  `;
+  document.getElementById('acoesVendedor').innerHTML = `
+    <button class="btn primary" onclick="gerarQR('${v.id}','${encodeURIComponent(v.nome)}')">📲 Gerar QR Code</button>
+    ${v.status === 'pendente' ? `<button class="btn green" onclick="aprovarVendedor('${v.id}');fecharModal('modalVendedor')">✓ Aprovar</button><button class="btn red" onclick="reprovarVendedor('${v.id}');fecharModal('modalVendedor')">✗ Reprovar</button>` : ''}
+    ${v.status === 'ativo' ? `<button class="btn red" onclick="inativarVendedor('${v.id}');fecharModal('modalVendedor')">Inativar</button>` : ''}
+    ${v.status === 'inativo' || v.status === 'reprovado' ? `<button class="btn green" onclick="aprovarVendedor('${v.id}');fecharModal('modalVendedor')">Reativar</button>` : ''}
+  `;
+  abrirModal('modalVendedor');
+}
+
+function gerarQR(id, nome) {
+  const nomeDecoded = decodeURIComponent(nome);
+  const url = `${CONF.BASE_URL}/cadastro.html?vendedor=${id}`;
+  document.getElementById('qrNome').textContent = `Link de ${nomeDecoded}`;
+  document.getElementById('qrUrl').textContent = url;
+  const container = document.getElementById('qrContainer');
+  container.innerHTML = '';
+  new QRCode(container, { text: url, width: 200, height: 200, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
+  abrirModal('modalQR');
+}
+
+function copiarLink() {
+  const url = document.getElementById('qrUrl').textContent;
+  navigator.clipboard.writeText(url).then(() => toast('Link copiado!','success'));
+}
+
+async function salvarNovoVendedor() {
+  const nome  = document.getElementById('na-nome').value.trim();
+  const cpf   = document.getElementById('na-cpf').value.replace(/\D/g,'');
+  const tel   = document.getElementById('na-tel').value.trim();
+  const email = document.getElementById('na-email').value.trim();
+  const cidade = document.getElementById('na-cidade').value.trim();
+  const senha = document.getElementById('na-senha').value.trim();
+  const status = document.getElementById('na-status').value;
+  const err   = document.getElementById('erroNovoAdmin');
+  if (!nome || !cpf || !tel || !senha) { mostrarErro(err, 'Nome, CPF, WhatsApp e senha são obrigatórios.'); return; }
+  if (!sb) { mostrarErro(err, 'Configure o Supabase para salvar.'); return; }
+  const { error } = await sb.from('vendedores').insert({ nome, cpf, telefone: tel, email, cidade, senha_hash: senha, status, aprovado_por: currentUser.id, aprovado_em: status === 'ativo' ? new Date().toISOString() : null });
+  if (error) { mostrarErro(err, 'Erro: ' + error.message); return; }
+  toast('Vendedor cadastrado! ✓','success');
+  err.style.display = 'none';
+  ['na-nome','na-cpf','na-tel','na-email','na-cidade','na-senha'].forEach(id => document.getElementById(id).value = '');
+  carregarStats();
+}
+
+// ══════════════════════════════════════════════
+// PORTAL DO VENDEDOR LOGADO
+// ══════════════════════════════════════════════
+function mostrarPortalVendedor() {
+  document.getElementById('telaPublica').style.display = 'none';
+  document.getElementById('telaAdmin').style.display = 'none';
+
+  if (currentUser.status === 'pendente') {
+    document.getElementById('telaPublica').style.display = 'flex';
+    document.getElementById('boxCadastro').style.display = 'none';
+    document.getElementById('boxLogin').style.display = 'none';
+    // mostrar tela de aguardando
+    const aguardando = document.createElement('div');
+    aguardando.className = 'cadastro-box';
+    aguardando.innerHTML = `
+      <div class="logo"><h1>FACILITA CELL</h1></div>
+      <div style="text-align:center;padding:20px 0">
+        <div style="font-size:50px;margin-bottom:16px">⏳</div>
+        <h2 style="font-family:var(--font-head);font-size:20px;color:var(--yellow);margin-bottom:10px">Cadastro em análise</h2>
+        <p style="color:var(--gray);font-size:13px;line-height:1.6">Seu cadastro ainda está <strong>aguardando aprovação</strong> do administrador. Você será notificado assim que for aprovado.</p>
+        <button class="btn-primary" style="margin-top:20px;max-width:200px" onclick="logoutPublico()">↩ Sair</button>
+      </div>`;
+    document.getElementById('telaPublica').querySelector('.cadastro-box')?.remove();
+    document.getElementById('telaPublica').appendChild(aguardando);
+    return;
+  }
+
+  if (currentUser.status !== 'ativo') {
+    alert('Seu cadastro foi reprovado ou inativado. Entre em contato com o administrador.');
+    logoutPublico();
+    return;
+  }
+
+  // Vendedor aprovado: exibir portal de vendas
+  document.getElementById('telaPublica').style.display = 'flex';
+  const el = document.getElementById('telaPublica');
+  el.innerHTML = `
+    <div style="width:100%;max-width:700px;padding:24px">
+      <div class="logo" style="margin-bottom:24px">
+        <h1>FACILITA CELL</h1>
+        <p>PORTAL DO VENDEDOR — ${currentUser.nome}</p>
+      </div>
+      <div class="stats-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+        <div class="stat-card"><div class="stat-label">Meus Contratos</div><div class="stat-value orange" id="v-total">—</div><div class="stat-sub">este mês</div></div>
+        <div class="stat-card"><div class="stat-label">Em aberto</div><div class="stat-value yellow" id="v-pendentes">—</div><div class="stat-sub">candidatos meus</div></div>
+        <div class="stat-card"><div class="stat-label">Comissão</div><div class="stat-value green" id="v-comissao">—</div><div class="stat-sub">estimada</div></div>
+      </div>
+      <div class="card" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px">
+        <div class="card-title">📲 Meu QR Code de Cadastro</div>
+        <p style="color:var(--gray);font-size:12px;margin-bottom:16px">Mostre este QR Code para o cliente escanear e iniciar o cadastro vinculado a você.</p>
+        <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+          <div id="meuQR"></div>
+          <div>
+            <div style="font-size:12px;color:var(--gray);margin-bottom:8px">Ou compartilhe o link:</div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:10px 14px;font-size:12px;color:var(--white);word-break:break-all" id="meuLink"></div>
+            <button class="btn primary sm" style="margin-top:10px" onclick="copiarMeuLink()">📋 Copiar link</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+        <div class="card-title">👥 Meus candidatos recentes</div>
+        <div id="meusCandidatos"><div style="color:var(--gray);font-size:13px">Carregando...</div></div>
+      </div>
+      <div style="margin-top:16px;text-align:center">
+        <button class="btn ghost" onclick="logoutPublico()">↩ Sair</button>
+      </div>
+    </div>`;
+
+  carregarPortalVendedor();
+}
+
+async function carregarPortalVendedor() {
+  const url = `${CONF.BASE_URL}/cadastro.html?vendedor=${currentUser.id}`;
+  document.getElementById('meuLink').textContent = url;
+  const qrEl = document.getElementById('meuQR');
+  if (qrEl) new QRCode(qrEl, { text: url, width: 140, height: 140, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
+
+  if (!sb) { document.getElementById('v-total').textContent = '0'; document.getElementById('v-pendentes').textContent = '0'; document.getElementById('v-comissao').textContent = 'R$ 0'; return; }
+
+  const [contratos, candidatos] = await Promise.all([
+    sb.from('contratos').select('valor_total').eq('vendedor_id', currentUser.id),
+    sb.from('candidatos').select('*').eq('vendedor_id', currentUser.id).order('criado_em',{ascending:false}).limit(10),
+  ]);
+
+  document.getElementById('v-total').textContent = contratos.data?.length || 0;
+  document.getElementById('v-pendentes').textContent = (candidatos.data||[]).filter(c=>c.status==='pendente'||c.status==='em_analise').length;
+
+  const lista = candidatos.data || [];
+  document.getElementById('meusCandidatos').innerHTML = lista.length ? `
+    <div class="table-wrap"><table>
+      <thead><tr><th>Nome</th><th>Celular desejado</th><th>Status</th><th>Data</th></tr></thead>
+      <tbody>${lista.map(c=>`<tr>
+        <td><strong>${c.nome}</strong></td>
+        <td>${c.celular_desejado || '—'}</td>
+        <td>${badgeStatus(c.status)}</td>
+        <td>${new Date(c.criado_em).toLocaleDateString('pt-BR')}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>` : '<div style="color:var(--gray);font-size:13px">Nenhum candidato ainda — compartilhe seu QR Code!</div>';
+}
+
+window.copiarMeuLink = () => {
+  const url = document.getElementById('meuLink')?.textContent;
+  if (url) navigator.clipboard.writeText(url).then(() => toast('Link copiado!','success'));
+};
+
+// ══════════════════════════════════════════════
+// NAVEGAÇÃO
+// ══════════════════════════════════════════════
+const pageTitles = { pendentes:'⏳ Cadastros Pendentes', ativos:'✅ Vendedores Ativos', todos:'👥 Todos os Vendedores', ranking:'🏆 Ranking de Vendedores', novoAdmin:'➕ Novo Vendedor' };
+const pageLoaders = { pendentes:carregarPendentes, ativos:carregarAtivos, todos:carregarTodos, ranking:carregarRanking, novoAdmin:()=>{} };
+
+function goPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`page-${name}`).classList.add('active');
+  if (el) el.classList.add('active');
+  document.getElementById('pageTitle').textContent = pageTitles[name] || name;
+  if (pageLoaders[name]) pageLoaders[name]();
+}
+
+// ══════════════════════════════════════════════
+// UTILITÁRIOS
+// ══════════════════════════════════════════════
+function abrirModal(id)  { document.getElementById(id).classList.add('open'); }
+function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
+
+function logoutAdmin() { sessionStorage.removeItem('fc_vendedor'); location.reload(); }
+function logoutPublico() { sessionStorage.removeItem('fc_vendedor'); location.reload(); }
+
+function mostrarErro(el, msg) { el.textContent = msg; el.style.display = 'block'; }
+
+function toast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 3500);
+}
+
+function badgeStatus(s) {
+  const map = { pendente:'⏳ Pendente', ativo:'✅ Ativo', inativo:'⛔ Inativo', reprovado:'❌ Reprovado', aprovado:'✅ Aprovado', em_analise:'🔍 Em análise' };
+  const cls = { pendente:'pendente', ativo:'ativo', inativo:'inativo', reprovado:'reprovado', aprovado:'ativo', em_analise:'pendente' };
+  return `<span class="status-badge ${cls[s]||''}">${map[s]||s}</span>`;
+}
+
+function formatCPF(cpf) {
+  if (!cpf) return '—';
+  const n = cpf.replace(/\D/g,'');
+  return n.length === 11 ? `${n.slice(0,3)}.${n.slice(3,6)}.${n.slice(6,9)}-${n.slice(9)}` : cpf;
+}
+
+function mascCPF(el) {
+  let v = el.value.replace(/\D/g,'').slice(0,11);
+  if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/,'$1.$2.$3-$4');
+  else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{0,3})/,'$1.$2.$3');
+  else if (v.length > 3) v = v.replace(/(\d{3})(\d{0,3})/,'$1.$2');
+  el.value = v;
+}
+function mascTel(el) {
+  let v = el.value.replace(/\D/g,'').slice(0,11);
+  if (v.length > 6) v = v.replace(/(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3');
+  else if (v.length > 2) v = v.replace(/(\d{2})(\d{0,5})/,'($1) $2');
+  el.value = v;
+}
+</script>
+</body>
+</html>

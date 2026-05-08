@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>FACILITA CELL — Meu Financiamento</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --laranja:#E8650A;--laranja2:#FF8C35;--verde:#1DB954;--vermelho:#E74C3C;
+  --amarelo:#F39C12;--azul:#3498DB;--bg:#0A0A0A;--bg2:#141414;--bg3:#1E1E1E;
+  --bg4:#2A2A2A;--branco:#F4F4EE;--cinza:#888;--borda:#2A2A2A;
+  --font:'system-ui',-apple-system,sans-serif;
+}
+body{background:var(--bg);color:var(--branco);font-family:var(--font);min-height:100vh;max-width:480px;margin:0 auto}
+
+/* LOGIN */
+.tela-login{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.logo-area{text-align:center;margin-bottom:40px}
+.logo-area h1{font-size:32px;font-weight:900;color:var(--laranja);letter-spacing:3px}
+.logo-area p{color:var(--cinza);font-size:13px;margin-top:6px}
+.logo-area .dot{width:8px;height:8px;border-radius:50%;background:var(--verde);display:inline-block;margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.card-login{background:var(--bg3);border-radius:20px;padding:28px;width:100%;max-width:360px}
+.card-login h2{font-size:18px;font-weight:700;margin-bottom:6px}
+.card-login p{color:var(--cinza);font-size:13px;margin-bottom:24px}
+.input-group{margin-bottom:16px}
+.input-group label{display:block;font-size:11px;color:var(--cinza);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.input-group input{width:100%;background:var(--bg4);border:1.5px solid var(--borda);border-radius:12px;padding:14px 16px;color:var(--branco);font-size:16px;outline:none;transition:.2s}
+.input-group input:focus{border-color:var(--laranja)}
+.btn-login{width:100%;padding:16px;background:var(--laranja);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:.2s;margin-top:4px}
+.btn-login:hover{background:var(--laranja2)}
+.btn-login:disabled{opacity:.6;cursor:default}
+.erro{background:rgba(231,76,60,.12);border:1px solid rgba(231,76,60,.3);border-radius:10px;padding:12px;font-size:12px;color:var(--vermelho);margin-bottom:14px;display:none}
+
+/* HEADER */
+.header{background:var(--bg2);border-bottom:1px solid var(--borda);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header-logo{font-size:16px;font-weight:800;color:var(--laranja);letter-spacing:2px}
+.header-user{font-size:12px;color:var(--cinza)}
+.btn-sair{background:none;border:none;color:var(--cinza);font-size:12px;cursor:pointer;padding:6px 12px;border-radius:8px;border:1px solid var(--borda)}
+.btn-sair:hover{color:var(--vermelho);border-color:var(--vermelho)}
+
+/* MAIN */
+.main{padding:0 0 100px}
+
+/* STATUS CARD */
+.status-card{margin:16px;background:linear-gradient(135deg,var(--laranja) 0%,#c0420a 100%);border-radius:20px;padding:24px;position:relative;overflow:hidden}
+.status-card::before{content:'';position:absolute;right:-30px;top:-30px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.08)}
+.status-card::after{content:'';position:absolute;right:40px;bottom:-40px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.05)}
+.status-card .label{font-size:11px;opacity:.8;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.status-card .aparelho{font-size:20px;font-weight:800;margin-bottom:4px}
+.status-card .contrato-num{font-size:12px;opacity:.7;margin-bottom:20px}
+.status-card .progress-info{display:flex;justify-content:space-between;margin-bottom:8px;font-size:12px}
+.progress-bar-outer{height:6px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden}
+.progress-bar-inner{height:100%;background:#fff;border-radius:3px;transition:.6s}
+.status-card .parcelas-info{display:flex;gap:20px;margin-top:16px}
+.pi-item{text-align:center}
+.pi-item .num{font-size:22px;font-weight:800}
+.pi-item .txt{font-size:10px;opacity:.7;text-transform:uppercase}
+
+/* PRÓXIMA PARCELA */
+.proxima-card{margin:0 16px 16px;background:var(--bg3);border-radius:20px;padding:20px;border:1px solid var(--borda)}
+.proxima-title{font-size:11px;color:var(--cinza);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.proxima-content{display:flex;align-items:center;justify-content:space-between}
+.proxima-valor{font-size:28px;font-weight:800;color:var(--branco)}
+.proxima-venc{font-size:12px;color:var(--cinza);margin-top:4px}
+.proxima-status{padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.proxima-status.pendente{background:rgba(243,156,18,.15);color:var(--amarelo)}
+.proxima-status.atrasado{background:rgba(231,76,60,.15);color:var(--vermelho)}
+.proxima-status.pago{background:rgba(29,185,84,.15);color:var(--verde)}
+.btn-pagar{width:100%;padding:16px;background:var(--laranja);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;margin-top:16px;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-pagar:hover{background:var(--laranja2)}
+.btn-pagar:disabled{opacity:.5}
+
+/* PAGAMENTO MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal-sheet{background:var(--bg2);border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;animation:slideUp .3s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:40px;height:4px;background:var(--bg4);border-radius:2px;margin:0 auto 20px}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:20px;text-align:center}
+.pay-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.pay-tab{padding:14px;text-align:center;border-radius:14px;cursor:pointer;border:2px solid var(--borda);transition:.2s}
+.pay-tab.active{border-color:var(--laranja);background:rgba(232,101,10,.1)}
+.pay-tab .icon{font-size:24px;margin-bottom:6px}
+.pay-tab .name{font-size:12px;font-weight:700}
+.pix-content{text-align:center}
+.pix-qr{background:#fff;border-radius:16px;padding:16px;display:inline-block;margin:16px auto}
+.pix-qr canvas{display:block}
+.pix-chave-box{background:var(--bg3);border:1px solid var(--borda);border-radius:12px;padding:14px;margin:16px 0;word-break:break-all;font-family:monospace;font-size:12px;color:var(--cinza)}
+.btn-copiar{width:100%;padding:16px;background:var(--verde);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;transition:.2s}
+.btn-copiar:hover{opacity:.9}
+.btn-boleto{width:100%;padding:16px;background:var(--azul);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;transition:.2s}
+.btn-boleto:hover{opacity:.9}
+.boleto-info{background:var(--bg3);border-radius:12px;padding:16px;margin-bottom:16px}
+.boleto-linha{font-family:monospace;font-size:12px;word-break:break-all;color:var(--cinza);margin-top:8px}
+.btn-fechar{width:100%;padding:14px;background:var(--bg4);color:var(--branco);border:none;border-radius:14px;font-size:14px;cursor:pointer;margin-top:10px}
+
+/* LISTA PARCELAS */
+.secao-titulo{font-size:12px;color:var(--cinza);text-transform:uppercase;letter-spacing:1px;padding:16px 16px 8px}
+.parcela-item{margin:0 16px 10px;background:var(--bg3);border-radius:16px;padding:16px;display:flex;align-items:center;gap:14px;border:1px solid var(--borda)}
+.parcela-num{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.parcela-num.pago{background:rgba(29,185,84,.2);color:var(--verde)}
+.parcela-num.pendente{background:rgba(243,156,18,.2);color:var(--amarelo)}
+.parcela-num.atrasado{background:rgba(231,76,60,.2);color:var(--vermelho)}
+.parcela-info{flex:1}
+.parcela-venc{font-size:13px;font-weight:600}
+.parcela-status{font-size:11px;margin-top:2px}
+.parcela-status.pago{color:var(--verde)}
+.parcela-status.pendente{color:var(--amarelo)}
+.parcela-status.atrasado{color:var(--vermelho)}
+.parcela-valor{font-size:14px;font-weight:700;text-align:right}
+.parcela-acao{margin-top:4px;text-align:right}
+.btn-parcela-pagar{font-size:10px;padding:4px 10px;background:var(--laranja);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600}
+
+/* IMEI BADGE */
+.imei-badge{margin:0 16px 16px;background:var(--bg3);border-radius:16px;padding:14px 16px;border:1px solid var(--borda);display:flex;align-items:center;gap:12px}
+.imei-badge .ic{font-size:24px}
+.imei-badge .info .label{font-size:10px;color:var(--cinza);text-transform:uppercase;letter-spacing:.5px}
+.imei-badge .info .val{font-size:13px;font-weight:600;font-family:monospace;margin-top:2px}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg3);border:1px solid var(--borda);border-radius:12px;padding:12px 20px;font-size:13px;font-weight:500;transition:.3s;z-index:9999;white-space:nowrap;opacity:0}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.success{border-color:var(--verde);color:var(--verde)}
+.toast.error{border-color:var(--vermelho);color:var(--vermelho)}
+
+/* NAV BOTTOM */
+.nav-bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg2);border-top:1px solid var(--borda);display:flex;padding:10px 0 20px}
+.nav-item{flex:1;text-align:center;cursor:pointer;padding:8px}
+.nav-item .nav-ic{font-size:20px}
+.nav-item .nav-lbl{font-size:10px;color:var(--cinza);margin-top:3px;display:block}
+.nav-item.active .nav-lbl{color:var(--laranja)}
+
+/* SCREENS */
+.screen{display:none}
+.screen.active{display:block}
+
+/* SPINNER */
+.spinner{width:32px;height:32px;border:3px solid var(--borda);border-top-color:var(--laranja);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:14px;color:var(--cinza);font-size:13px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="telaLogin">
+  <div class="tela-login">
+    <div class="logo-area">
+      <h1>FACILITA CELL</h1>
+      <p><span class="dot"></span>Portal do Cliente</p>
+    </div>
+    <div class="card-login">
+      <h2>Acesse seu financiamento</h2>
+      <p>Digite seu CPF e os últimos 4 dígitos do telefone cadastrado</p>
+      <div class="erro" id="erroLogin"></div>
+      <div class="input-group">
+        <label>CPF</label>
+        <input type="tel" id="loginCpf" placeholder="000.000.000-00" maxlength="14"
+          oninput="mascaraCPF(this)" onkeydown="if(event.key==='Enter')entrar()"/>
+      </div>
+      <div class="input-group">
+        <label>Últimos 4 dígitos do telefone</label>
+        <input type="tel" id="loginTel" placeholder="0000" maxlength="4"
+          oninput="this.value=this.value.replace(/\D/g,'')"
+          onkeydown="if(event.key==='Enter')entrar()"/>
+      </div>
+      <button class="btn-login" id="btnEntrar" onclick="entrar()">Entrar →</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="telaApp" style="display:none">
+  <div class="header">
+    <div class="header-logo">FACILITA CELL</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="header-user" id="headerNome">—</div>
+      <button class="btn-sair" onclick="sair()">Sair</button>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="nav-bottom">
+    <div class="nav-item active" onclick="trocarTela('inicio',this)">
+      <div class="nav-ic">🏠</div><span class="nav-lbl">Início</span>
+    </div>
+    <div class="nav-item" onclick="trocarTela('parcelas',this)">
+      <div class="nav-ic">💳</div><span class="nav-lbl">Parcelas</span>
+    </div>
+    <div class="nav-item" onclick="trocarTela('aparelho',this)">
+      <div class="nav-ic">📱</div><span class="nav-lbl">Aparelho</span>
+    </div>
+    <div class="nav-item" onclick="trocarTela('ajuda',this)">
+      <div class="nav-ic">💬</div><span class="nav-lbl">Ajuda</span>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- TELA INÍCIO -->
+    <div class="screen active" id="screen-inicio">
+      <div class="loading-screen" id="loadingInicio">
+        <div class="spinner"></div>
+        <span>Carregando seu financiamento...</span>
+      </div>
+      <div id="conteudoInicio" style="display:none">
+        <!-- Status card -->
+        <div class="status-card">
+          <div class="label">Financiamento</div>
+          <div class="aparelho" id="nomeAparelho">—</div>
+          <div class="contrato-num" id="numContrato">—</div>
+          <div class="progress-info">
+            <span id="parcelasLabel">— parcelas pagas</span>
+            <span id="totalLabel">— no total</span>
+          </div>
+          <div class="progress-bar-outer">
+            <div class="progress-bar-inner" id="progressBar" style="width:0%"></div>
+          </div>
+          <div class="parcelas-info">
+            <div class="pi-item">
+              <div class="num" id="pagas">0</div>
+              <div class="txt">Pagas</div>
+            </div>
+            <div class="pi-item">
+              <div class="num" id="pendentes">0</div>
+              <div class="txt">Pendentes</div>
+            </div>
+            <div class="pi-item">
+              <div class="num" id="atrasadas">0</div>
+              <div class="txt">Atrasadas</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Próxima parcela -->
+        <div class="proxima-card" id="proximaCard">
+          <div class="proxima-title">📅 Próxima parcela</div>
+          <div class="proxima-content">
+            <div>
+              <div class="proxima-valor" id="proximaValor">—</div>
+              <div class="proxima-venc" id="proximaVenc">—</div>
+            </div>
+            <div class="proxima-status pendente" id="proximaStatus">Pendente</div>
+          </div>
+          <button class="btn-pagar" id="btnPagar" onclick="abrirPagamento()">
+            💳 Pagar agora
+          </button>
+        </div>
+
+        <!-- IMEI Badge -->
+        <div class="imei-badge" id="imeiBadge" style="display:none">
+          <div class="ic">📱</div>
+          <div class="info">
+            <div class="label">IMEI do aparelho</div>
+            <div class="val" id="imeiVal">—</div>
+          </div>
+        </div>
+
+        <!-- Info rápida -->
+        <div style="margin:0 16px;background:var(--bg3);border-radius:16px;padding:16px;border:1px solid var(--borda)">
+          <div style="font-size:11px;color:var(--cinza);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Resumo do contrato</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div><div style="font-size:10px;color:var(--cinza)">Valor total</div><div style="font-weight:700" id="resumoTotal">—</div></div>
+            <div><div style="font-size:10px;color:var(--cinza)">Vencimento</div><div style="font-weight:700" id="resumoDia">—</div></div>
+            <div><div style="font-size:10px;color:var(--cinza)">Taxa de juros</div><div style="font-weight:700" id="resumoJuros">—</div></div>
+            <div><div style="font-size:10px;color:var(--cinza)">Contrato</div><div style="font-weight:700;color:var(--laranja)" id="resumoNum">—</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TELA PARCELAS -->
+    <div class="screen" id="screen-parcelas">
+      <div id="listaParcelas"></div>
+    </div>
+
+    <!-- TELA APARELHO -->
+    <div class="screen" id="screen-aparelho">
+      <div style="padding:16px">
+        <div style="background:var(--bg3);border-radius:20px;padding:24px;border:1px solid var(--borda);text-align:center">
+          <div style="font-size:48px;margin-bottom:16px">📱</div>
+          <div style="font-size:20px;font-weight:800;margin-bottom:4px" id="aparelhoNome2">—</div>
+          <div style="font-size:13px;color:var(--cinza);margin-bottom:20px" id="aparelhoImei2">IMEI: —</div>
+          <div style="background:var(--bg4);border-radius:12px;padding:16px;text-align:left">
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--borda)">
+              <span style="color:var(--cinza);font-size:13px">Situação</span>
+              <span id="aparelhoSituacao" style="font-weight:600;color:var(--verde)">Ativo</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--borda)">
+              <span style="color:var(--cinza);font-size:13px">Valor financiado</span>
+              <span id="aparelhoValor" style="font-weight:600">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0">
+              <span style="color:var(--cinza);font-size:13px">Data do contrato</span>
+              <span id="aparelhoData" style="font-weight:600">—</span>
+            </div>
+          </div>
+        </div>
+        <div style="background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.2);border-radius:16px;padding:16px;margin-top:16px">
+          <div style="font-size:13px;font-weight:700;color:var(--vermelho);margin-bottom:8px">⚠️ Atenção</div>
+          <div style="font-size:12px;color:#ccc;line-height:1.6">Este aparelho está vinculado ao seu contrato de financiamento. Em caso de inadimplência superior a 30 dias, o aparelho poderá ser bloqueado remotamente conforme o Termo de Ciência assinado.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TELA AJUDA -->
+    <div class="screen" id="screen-ajuda">
+      <div style="padding:16px">
+        <div style="background:var(--bg3);border-radius:20px;padding:24px;border:1px solid var(--borda);margin-bottom:16px">
+          <div style="font-size:16px;font-weight:700;margin-bottom:16px">📞 Fale conosco</div>
+          <a href="https://wa.me/5545991187639" target="_blank" style="display:flex;align-items:center;gap:12px;text-decoration:none;background:#25D366;border-radius:14px;padding:14px;margin-bottom:10px">
+            <span style="font-size:22px">💬</span>
+            <div>
+              <div style="color:#fff;font-weight:700;font-size:14px">WhatsApp FACILITA CELL</div>
+              <div style="color:rgba(255,255,255,.7);font-size:12px">(45) 99118-7639 · Atendimento rápido</div>
+            </div>
+          </a>
+        </div>
+        <div style="background:var(--bg3);border-radius:20px;padding:20px;border:1px solid var(--borda);margin-bottom:16px">
+          <div style="font-size:14px;font-weight:700;margin-bottom:14px">❓ Dúvidas frequentes</div>
+          <div id="faq"></div>
+        </div>
+        <div style="background:var(--bg3);border-radius:20px;padding:20px;border:1px solid var(--borda);text-align:center">
+          <div style="font-size:13px;color:var(--cinza);margin-bottom:12px">📲 Compartilhar portal com outras parcelas</div>
+          <div id="qrPortal" style="background:#fff;border-radius:12px;padding:12px;display:inline-block"></div>
+          <div style="font-size:11px;color:var(--cinza);margin-top:10px">Escaneie para abrir em outro dispositivo</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PAGAMENTO -->
+<div class="modal-overlay" id="modalPagamento">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Pagar parcela</div>
+    <div id="pagValorInfo" style="text-align:center;margin-bottom:20px">
+      <div style="font-size:11px;color:var(--cinza);text-transform:uppercase;letter-spacing:1px">Valor a pagar</div>
+      <div style="font-size:36px;font-weight:800" id="modalValor">—</div>
+      <div style="font-size:12px;color:var(--cinza);margin-top:4px" id="modalVenc">—</div>
+    </div>
+    <div class="pay-tabs">
+      <div class="pay-tab active" onclick="selecionarMetodo('pix',this)">
+        <div class="icon">⚡</div>
+        <div class="name">PIX</div>
+      </div>
+      <div class="pay-tab" onclick="selecionarMetodo('boleto',this)">
+        <div class="icon">🏦</div>
+        <div class="name">Boleto</div>
+      </div>
+    </div>
+
+    <!-- PIX -->
+    <div id="metodoPix">
+      <div class="pix-content">
+        <div style="font-size:13px;color:var(--cinza);margin-bottom:12px">Escaneie o QR Code ou copie a chave PIX</div>
+        <div class="pix-qr"><canvas id="qrcodePix"></canvas></div>
+        <div class="pix-chave-box" id="pixChave">Chave PIX: (45) 99118-7639<br>Favorecido: FACILITA CELL<br>Banco: —</div>
+        <button class="btn-copiar" onclick="copiarPix()">📋 Copiar chave PIX</button>
+        <div style="font-size:11px;color:var(--cinza);text-align:center;margin-bottom:16px">Após pagar, envie o comprovante via WhatsApp para confirmar</div>
+        <a href="https://wa.me/5545991187639?text=Olá! Paguei a parcela via PIX e vou enviar o comprovante." target="_blank" style="display:block;padding:14px;background:rgba(29,185,84,.1);border:1px solid rgba(29,185,84,.3);border-radius:12px;color:var(--verde);text-align:center;font-size:13px;font-weight:600;text-decoration:none;margin-bottom:10px">📲 Enviar comprovante via WhatsApp</a>
+      </div>
+    </div>
+
+    <!-- BOLETO -->
+    <div id="metodoBoleto" style="display:none">
+      <div class="boleto-info">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px">Código de barras</div>
+        <div class="boleto-linha" id="boletoLinha">Boleto não disponível. Entre em contato via WhatsApp para solicitar.</div>
+      </div>
+      <button class="btn-boleto" id="btnCopiarBoleto" onclick="copiarBoleto()">📋 Copiar código de barras</button>
+      <div style="font-size:11px;color:var(--cinza);text-align:center;margin-top:12px;margin-bottom:10px">O boleto pode ser pago em qualquer banco, lotérica ou pelo app do seu banco</div>
+    </div>
+
+    <button class="btn-fechar" onclick="fecharModal()">Fechar</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+var SUPABASE_URL = 'https://lgtnarralybqkevsrczn.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxndG5hcnJhbHlicWtldnNyY3puIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NDY5NTIsImV4cCI6MjA5MjEyMjk1Mn0.7wClczE45DQIXObEQDXvljhZIBLXuS8a0tUmTe9xtZQ';
+var PIX_CHAVE = '5545991187639'; // WhatsApp como chave PIX
+var EMPRESA = 'FACILITA CELL';
+var WHATSAPP = '5545991187639';
+
+var sb = null;
+try { sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e){}
+
+var cliente = null;
+var contrato = null;
+var parcelas = [];
+var parcelaSelecionada = null;
+var metodo = 'pix';
+
+// ── HELPERS ──────────────────────────────────────────────
+function fmt(v){ return 'R$ ' + Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2}); }
+function fmtDate(d){ return d ? new Date(d+'T00:00:00').toLocaleDateString('pt-BR') : '—'; }
+function set(id,v){ var e=document.getElementById(id); if(e) e.textContent=v||'—'; }
+function mascaraCPF(el){
+  var v=el.value.replace(/\D/g,'').substring(0,11);
+  v=v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+  el.value=v;
+}
+function toast(msg,type){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+(type||'');
+  setTimeout(function(){t.className='toast';},3000);
+}
+
+// ── LOGIN ─────────────────────────────────────────────────
+async function entrar(){
+  var cpf=document.getElementById('loginCpf').value.replace(/\D/g,'');
+  var tel=document.getElementById('loginTel').value.trim();
+  var err=document.getElementById('erroLogin');
+  var btn=document.getElementById('btnEntrar');
+  err.style.display='none';
+
+  if(cpf.length<11){err.textContent='CPF inválido.';err.style.display='block';return;}
+  if(tel.length<4){err.textContent='Digite os últimos 4 dígitos do telefone.';err.style.display='block';return;}
+
+  btn.disabled=true; btn.textContent='Entrando...';
+
+  try {
+    if(!sb) throw new Error('Banco não conectado.');
+
+    var res = await sb.from('clientes').select('*').eq('cpf',cpf).limit(1);
+    if(res.error) throw new Error(res.error.message);
+    var cli = res.data && res.data.length > 0 ? res.data[0] : null;
+    if(!cli){ err.textContent='CPF não encontrado. Verifique com a loja.'; err.style.display='block'; btn.disabled=false; btn.textContent='Entrar →'; return; }
+
+    var telLimpo = (cli.telefone||'').replace(/\D/g,'');
+    if(!telLimpo.endsWith(tel)){ err.textContent='Telefone incorreto. Tente novamente.'; err.style.display='block'; btn.disabled=false; btn.textContent='Entrar →'; return; }
+
+    cliente = cli;
+    sessionStorage.setItem('fc_cliente', JSON.stringify(cli));
+    document.getElementById('telaLogin').style.display='none';
+    document.getElementById('telaApp').style.display='block';
+    document.getElementById('headerNome').textContent = cli.nome.split(' ')[0];
+    await carregarContrato();
+  } catch(e){
+    err.textContent = e.message;
+    err.style.display='block';
+    btn.disabled=false; btn.textContent='Entrar →';
+  }
+}
+
+async function carregarContrato(){
+  try {
+    var res = await sb.from('contratos')
+      .select('*, parcelas!contrato_id(*)')
+      .eq('cliente_id', cliente.id)
+      .eq('status','ativo')
+      .order('criado_em',{ascending:false})
+      .limit(1);
+    if(res.error) throw new Error(res.error.message);
+    if(!res.data || res.data.length===0){
+      document.getElementById('loadingInicio').innerHTML='<div style="text-align:center;color:var(--cinza);padding:40px"><div style="font-size:40px;margin-bottom:16px">📭</div><div>Nenhum financiamento ativo encontrado.</div><div style="margin-top:8px;font-size:12px">Fale com a loja para mais informações.</div></div>';
+      return;
+    }
+    contrato = res.data[0];
+    parcelas = (contrato.parcelas||[]).sort(function(a,b){return a.numero-b.numero;});
+    renderizarInicio();
+    renderizarParcelas();
+    renderizarAparelho();
+    renderizarFAQ();
+    gerarQRPortal();
+    document.getElementById('loadingInicio').style.display='none';
+    document.getElementById('conteudoInicio').style.display='block';
+  } catch(e){
+    document.getElementById('loadingInicio').innerHTML='<div style="color:var(--vermelho);text-align:center;padding:40px">❌ ' + e.message + '</div>';
+  }
+}
+
+function renderizarInicio(){
+  var pagas=parcelas.filter(function(p){return p.status==='pago';}).length;
+  var atrasadas=parcelas.filter(function(p){return p.status==='atrasado';}).length;
+  var total=parcelas.length;
+  var pendentes=total-pagas-atrasadas;
+  var pct=total?Math.round(pagas/total*100):0;
+
+  set('nomeAparelho', contrato.celular_modelo || (contrato.celular_imei ? 'Aparelho IMEI '+contrato.celular_imei.substring(0,6)+'...' : 'Celular Financiado'));
+  set('numContrato', 'Contrato '+contrato.numero);
+  set('parcelasLabel', pagas+'/'+total+' parcelas pagas');
+  set('totalLabel', fmt(contrato.valor_total)+' total');
+  document.getElementById('progressBar').style.width=pct+'%';
+  set('pagas',pagas);
+  set('pendentes',pendentes);
+  set('atrasadas',atrasadas);
+  set('resumoTotal',fmt(contrato.valor_total));
+  set('resumoDia','Todo dia '+contrato.dia_vencimento);
+  set('resumoJuros',(contrato.taxa_juros||0)+'% a.m.');
+  set('resumoNum',contrato.numero);
+
+  // Próxima parcela
+  var proxima = parcelas.find(function(p){return p.status!=='pago';});
+  if(proxima){
+    parcelaSelecionada = proxima;
+    set('proximaValor', fmt(proxima.valor));
+    var hoje = new Date();
+    var venc = new Date(proxima.vencimento+'T00:00:00');
+    var dias = Math.ceil((venc-hoje)/86400000);
+    var txt = proxima.status==='atrasado' ? '⚠️ Atrasada — venceu em '+fmtDate(proxima.vencimento) : 'Vence em '+fmtDate(proxima.vencimento)+(dias>0?' (em '+dias+' dias)':' (hoje)');
+    set('proximaVenc', txt);
+    var stEl=document.getElementById('proximaStatus');
+    stEl.textContent=proxima.status.charAt(0).toUpperCase()+proxima.status.slice(1);
+    stEl.className='proxima-status '+proxima.status;
+  } else {
+    document.getElementById('proximaCard').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:32px;margin-bottom:10px">🎉</div><div style="font-weight:700;color:var(--verde)">Financiamento quitado!</div><div style="font-size:12px;color:var(--cinza);margin-top:6px">Parabéns! Todas as parcelas foram pagas.</div></div>';
+  }
+
+  // IMEI
+  if(contrato.celular_imei){
+    document.getElementById('imeiBadge').style.display='flex';
+    set('imeiVal', contrato.celular_imei);
+  }
+}
+
+function renderizarParcelas(){
+  var html='<div class="secao-titulo">Todas as parcelas</div>';
+  parcelas.forEach(function(p){
+    var st=p.status;
+    var icone=st==='pago'?'✅':st==='atrasado'?'⚠️':'⏳';
+    var stTxt=st==='pago'?'Pago':st==='atrasado'?'Atrasado':'Pendente';
+    html+='<div class="parcela-item"><div class="parcela-num '+st+'">'+p.numero+'</div><div class="parcela-info"><div class="parcela-venc">'+fmtDate(p.vencimento)+'</div><div class="parcela-status '+st+'">'+icone+' '+stTxt+'</div></div><div><div class="parcela-valor">'+fmt(p.valor)+'</div>'+
+    (st!=='pago'?'<div class="parcela-acao"><button class="btn-parcela-pagar" onclick="selecionarParcela(\''+p.id+'\')">Pagar</button></div>':'')+'</div></div>';
+  });
+  document.getElementById('listaParcelas').innerHTML=html;
+}
+
+function selecionarParcela(id){
+  var p=parcelas.find(function(x){return x.id===id;});
+  if(p){ parcelaSelecionada=p; abrirPagamento(); }
+}
+
+function renderizarAparelho(){
+  set('aparelhoNome2', contrato.celular_modelo||'Celular Financiado');
+  set('aparelhoImei2', 'IMEI: '+(contrato.celular_imei||'—'));
+  set('aparelhoValor', fmt(contrato.valor_aparelho));
+  set('aparelhoData', fmtDate(contrato.data_inicio));
+  var travado=contrato.celular_travado;
+  var situEl=document.getElementById('aparelhoSituacao');
+  if(situEl){ situEl.textContent=travado?'🔒 Bloqueado':'✅ Ativo'; situEl.style.color=travado?'var(--vermelho)':'var(--verde)'; }
+}
+
+function renderizarFAQ(){
+  var faqs=[
+    ['Como pago a parcela?','Via PIX (chave: '+PIX_CHAVE+') ou solicite o boleto pelo WhatsApp.'],
+    ['O pagamento demora para aparecer?','PIX é reconhecido em minutos. Boleto em até 3 dias úteis.'],
+    ['Posso antecipar parcelas?','Sim! Entre em contato via WhatsApp para calcular o desconto.'],
+    ['O que acontece se eu atrasar?','Após 30 dias o aparelho pode ser bloqueado. Regularize logo!'],
+    ['Como obtenho o contrato?','Solicite pelo WhatsApp ou acesse via link enviado pela loja.'],
+  ];
+  document.getElementById('faq').innerHTML=faqs.map(function(f){
+    return '<div style="padding:12px 0;border-bottom:1px solid var(--borda)"><div style="font-size:13px;font-weight:600;margin-bottom:4px">'+f[0]+'</div><div style="font-size:12px;color:var(--cinza)">'+f[1]+'</div></div>';
+  }).join('');
+}
+
+function gerarQRPortal(){
+  try {
+    var url=window.location.origin+'/cliente.html?cpf='+cliente.cpf.replace(/\D/g,'');
+    QRCode.toCanvas(document.getElementById('qrPortal').appendChild(document.createElement('canvas')), url, {width:140,margin:1,color:{dark:'#000000',light:'#ffffff'}});
+  } catch(e){}
+}
+
+// ── PAGAMENTO ─────────────────────────────────────────────
+function abrirPagamento(){
+  if(!parcelaSelecionada) return;
+  set('modalValor', fmt(parcelaSelecionada.valor));
+  set('modalVenc', 'Parcela '+parcelaSelecionada.numero+' — Vence '+fmtDate(parcelaSelecionada.vencimento));
+  document.getElementById('modalPagamento').classList.add('open');
+
+  // Gerar QR Code PIX
+  try {
+    var canvas=document.getElementById('qrcodePix');
+    var pixStr='00020126580014BR.GOV.BCB.PIX0136'+PIX_CHAVE+'5204000053039865802BR5925'+EMPRESA+'6009FOZ IGUACU62040503***6304';
+    QRCode.toCanvas(canvas, 'pix://'+PIX_CHAVE+'?amount='+parcelaSelecionada.valor.toFixed(2), {width:180,margin:1,color:{dark:'#000000',light:'#ffffff'}}, function(){});
+  } catch(e){}
+
+  // Preencher dados boleto se disponível
+  if(parcelaSelecionada.asaas_boleto_linha){
+    document.getElementById('boletoLinha').textContent=parcelaSelecionada.asaas_boleto_linha;
+  }
+}
+
+function fecharModal(){
+  document.getElementById('modalPagamento').classList.remove('open');
+}
+
+function selecionarMetodo(m,el){
+  metodo=m;
+  document.querySelectorAll('.pay-tab').forEach(function(t){t.classList.remove('active');});
+  el.classList.add('active');
+  document.getElementById('metodoPix').style.display=m==='pix'?'block':'none';
+  document.getElementById('metodoBoleto').style.display=m==='boleto'?'block':'none';
+}
+
+function copiarPix(){
+  navigator.clipboard.writeText(PIX_CHAVE).then(function(){
+    toast('Chave PIX copiada!','success');
+  }).catch(function(){
+    toast('Chave: '+PIX_CHAVE,'');
+  });
+}
+
+function copiarBoleto(){
+  var linha=document.getElementById('boletoLinha').textContent;
+  if(linha.includes('não disponível')){
+    window.open('https://wa.me/55'+WHATSAPP+'?text=Olá! Preciso do boleto da parcela '+parcelaSelecionada.numero+' do contrato '+contrato.numero+'.','_blank');
+    return;
+  }
+  navigator.clipboard.writeText(linha).then(function(){
+    toast('Código copiado!','success');
+  });
+}
+
+// ── NAVEGAÇÃO ─────────────────────────────────────────────
+function trocarTela(id,el){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+  document.getElementById('screen-'+id).classList.add('active');
+  el.classList.add('active');
+}
+
+function sair(){
+  sessionStorage.removeItem('fc_cliente');
+  cliente=null; contrato=null; parcelas=[];
+  document.getElementById('telaLogin').style.display='flex';
+  document.getElementById('telaApp').style.display='none';
+}
+
+// ── RESTAURAR SESSÃO ──────────────────────────────────────
+(function(){
+  var saved=sessionStorage.getItem('fc_cliente');
+  if(saved){
+    try{
+      cliente=JSON.parse(saved);
+      document.getElementById('telaLogin').style.display='none';
+      document.getElementById('telaApp').style.display='block';
+      document.getElementById('headerNome').textContent=cliente.nome.split(' ')[0];
+      if(sb) carregarContrato();
+    }catch(e){ sessionStorage.removeItem('fc_cliente'); }
+  }
+})();
+
+// URL params
+(function(){
+  var params=new URLSearchParams(window.location.search);
+  var cpf=params.get('cpf');
+  if(cpf) document.getElementById('loginCpf').value=cpf;
+})();
+
+// Fechar modal clicando fora
+document.getElementById('modalPagamento').addEventListener('click',function(e){
+  if(e.target===this) fecharModal();
+});
+</script>
+</body>
+</html>
